@@ -920,7 +920,12 @@ view.addEventListener("click",e=>{
 if(S.wodRun||S.wodScore) tab="wod";
 renderHeader(); render();
 if("serviceWorker" in navigator && window.isSecureContext && !/claude/.test(location.hostname)){
-  try{ navigator.serviceWorker.register("sw.js").catch(()=>{}) }catch(e){}
+  try{
+    // When a new version takes over, reload once so the update shows right away. Workouts are saved, so nothing is lost.
+    const hadOld=!!navigator.serviceWorker.controller; let reloaded=false;
+    navigator.serviceWorker.addEventListener("controllerchange",()=>{ if(hadOld&&!reloaded){ reloaded=true; location.reload() } });
+    navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).catch(()=>{})
+  }catch(e){}
 }
 })();
 </script>
