@@ -18,16 +18,16 @@
 /* Layout: one-column gym logbook in team red and silver. Big tap targets, today's lifts as stacked cards, rest timer pinned to the bottom, progress dashboard as its own tab. */
 :root{
   --bg:#eceef1; --surface:#ffffff; --ink:#16181b; --muted:#5d636b; --line:#cfd3d8;
-  --accent:#c8102e; --accent-ink:#ffffff; --silver:#8a9099; --good:#1f7a45; --miss:#b45309; --soft:#dfe2e6;
+  --accent:#c8102e; --accent-ink:#ffffff; --on-miss:#ffffff; --silver:#8a9099; --good:#1f7a45; --miss:#b45309; --soft:#dfe2e6;
   --display:"Saira Condensed","Arial Narrow",system-ui,sans-serif;
   --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#121315; --surface:#1c1e21; --ink:#eceef1; --muted:#a2a8b0; --line:#2f3236;
-  --accent:#e8384f; --accent-ink:#ffffff; --silver:#b8bec6; --good:#4cc283; --miss:#f0a050; --soft:#25282c; color-scheme:dark}}
+  --accent:#e8384f; --accent-ink:#ffffff; --on-miss:#16181b; --silver:#b8bec6; --good:#4cc283; --miss:#f0a050; --soft:#25282c; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#121315; --surface:#1c1e21; --ink:#eceef1; --muted:#a2a8b0; --line:#2f3236;
-  --accent:#e8384f; --accent-ink:#ffffff; --silver:#b8bec6; --good:#4cc283; --miss:#f0a050; --soft:#25282c; color-scheme:dark}
+  --accent:#e8384f; --accent-ink:#ffffff; --on-miss:#16181b; --silver:#b8bec6; --good:#4cc283; --miss:#f0a050; --soft:#25282c; color-scheme:dark}
 *{box-sizing:border-box}
 html,body{background:var(--bg)}
 body{color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;-webkit-tap-highlight-color:transparent}
@@ -66,7 +66,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px soli
 .set.miss{border:2px solid var(--miss);background:transparent;color:var(--miss)}
 .btn{display:block;width:100%;font:700 17px var(--body);border:0;border-radius:12px;padding:15px;background:var(--accent);color:var(--accent-ink);cursor:pointer;margin-top:6px}
 .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
-.btn.danger{background:var(--miss);color:#fff}
+.btn.danger{background:var(--miss);color:var(--on-miss)}
 .row{display:flex;gap:10px}
 .row>*{flex:1;min-width:0}
 .confirm{border:2px solid var(--miss);border-radius:14px;padding:14px;margin-top:10px;background:var(--surface)}
@@ -157,6 +157,8 @@ textarea{width:100%;min-height:110px;font:13px ui-monospace,Menlo,monospace;bord
 .share>p{min-width:0}
 .shareurl{margin:10px 0 0;font-weight:700;font-size:17px;white-space:nowrap}
 @media (max-width:360px){.share{flex-direction:column;align-items:flex-start}}
+.erasebox{border:2px solid var(--miss);border-radius:12px;padding:12px 14px}
+.erasein{width:100%;font:700 18px var(--body);letter-spacing:.08em;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
 .sample{border:1px dashed var(--silver);border-radius:12px;padding:10px 14px;font-size:14px;margin-bottom:14px;color:var(--ink)}
 .tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}
 .tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
@@ -616,7 +618,13 @@ function renderSettings(){
     <p class="small" style="margin:0">${S.ack?"Accepted on "+new Date(S.ack).toLocaleDateString(undefined,{month:"long",day:"numeric",year:"numeric"})+".":""}</p></fieldset>
   <fieldset><legend>Reset</legend>`;
   h+= confirmMode==="reset"
-    ? `<p><b>Erase everything on this phone?</b> All history and weights are deleted. This can't be undone.</p><div class="row"><button class="btn ghost" id="cancelReset">Cancel</button><button class="btn danger" id="doReset">Erase</button></div>`
+    ? `<div class="erasebox"><p style="margin:0 0 8px"><b>Erase everything on this phone?</b> Every workout, WOD score, bodyweight entry, and setting gets deleted. This can't be undone.</p>
+      <p class="small" style="margin:0 0 10px">${S.lastBackup?`Your last backup was ${new Date(S.lastBackup).toLocaleDateString(undefined,{month:"long",day:"numeric",year:"numeric"})}.`:`<b>You have no backup.</b> Copy one first if you might want this data back.`}</p>
+      <button class="btn ghost" id="eraseBackup" style="margin:0 0 12px">Copy backup first</button>
+      <label for="eraseTxt" class="small" style="display:block;margin-bottom:6px">Type <b>ERASE</b> to confirm</label>
+      <input id="eraseTxt" class="erasein" type="text" autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false">
+      <p class="err" id="eraseErr" hidden>Type ERASE in the box to confirm.</p>
+      <div class="row" style="margin-top:10px"><button class="btn ghost" id="cancelReset" style="margin:0">Cancel</button><button class="btn danger" id="doReset" style="margin:0">Erase</button></div></div>`
     : `<button class="btn ghost" id="resetBtn">Erase all data</button>`;
   h+=`</fieldset>`;
   view.innerHTML=h;
@@ -647,7 +655,11 @@ function renderSettings(){
   $("#fileIn").onchange=e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>restore(r.result); r.readAsText(f) };
   const rb=$("#resetBtn"); if(rb) rb.onclick=()=>{confirmMode="reset";renderSettings()};
   const cr=$("#cancelReset"); if(cr) cr.onclick=()=>{confirmMode=null;renderSettings()};
-  const dr=$("#doReset"); if(dr) dr.onclick=()=>{ S=fresh(); confirmMode=null; save(); stopTimer(); renderHeader(); toast("All data erased"); renderSettings() };
+  const dr=$("#doReset"); if(dr) dr.onclick=()=>{
+    const t=$("#eraseTxt"); if(t.value.trim().toUpperCase()!=="ERASE"){ $("#eraseErr").hidden=false; t.focus(); return }
+    S=fresh(); confirmMode=null; save(); stopTimer(); renderHeader(); toast("All data erased"); renderSettings() };
+  const et=$("#eraseTxt"); if(et){ et.oninput=()=>{ $("#eraseErr").hidden=true }; et.scrollIntoView({block:"center"}) }
+  const eb=$("#eraseBackup"); if(eb) eb.onclick=()=>{ $("#backupText").value=JSON.stringify(S); copyBackup(false); setTimeout(()=>{ if(confirmMode==="reset") renderSettings() },300) };
 }
 function restore(txt){
   try{ const d=JSON.parse(txt); if(!d||!d.lifts||!Array.isArray(d.history)) throw 0; S=d; save(); renderHeader(); toast("Backup restored ("+S.history.length+" sessions)"); renderSettings() }
