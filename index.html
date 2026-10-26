@@ -159,6 +159,9 @@ textarea{width:100%;min-height:110px;font:13px ui-monospace,Menlo,monospace;bord
 @media (max-width:360px){.share{flex-direction:column;align-items:flex-start}}
 .erasebox{border:2px solid var(--miss);border-radius:12px;padding:12px 14px}
 .erasein{width:100%;font:700 18px var(--body);letter-spacing:.08em;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.install{border:2px solid var(--accent);background:var(--surface);border-radius:14px;padding:12px 14px;margin:12px 0 14px}
+.install ol{margin:8px 0 0;padding-left:22px;line-height:1.5}
+.install li{margin:2px 0}
 .sample{border:1px dashed var(--silver);border-radius:12px;padding:10px 14px;font-size:14px;margin-bottom:14px;color:var(--ink)}
 .tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}
 .tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
@@ -203,6 +206,7 @@ textarea{width:100%;min-height:110px;font:13px ui-monospace,Menlo,monospace;bord
 
 <div class="wrap">
   <header><h1><span class="f">Five</span> <span class="d">Deep</span></h1><div class="hdr"><div class="who" id="who"></div><button class="help" id="helpBtn" aria-label="How to use Five Deep">?</button></div></header>
+  <div id="installBar" hidden></div>
   <nav role="tablist">
     <button role="tab" id="tab-today" aria-selected="true" data-view="today">Today</button>
     <button role="tab" id="tab-wod" aria-selected="false" data-view="wod">WOD</button>
@@ -868,6 +872,32 @@ function shareApp(){
   try{ if(navigator.share){ navigator.share({title:"Five Deep",text:SHARE_TEXT,url:SHARE_URL}).catch(e=>{ if(e&&e.name!=="AbortError") copy() }); return } }catch(e){}
   copy() }
 
+/* ---------- INSTALL BANNER ---------- */
+// Shown only when Five Deep is opened in a browser tab instead of from the home screen.
+let deferredPrompt=null;
+window.addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); deferredPrompt=e; renderInstall() });
+window.addEventListener("appinstalled",()=>{ deferredPrompt=null; renderInstall(); toast("Installed. Open Five Deep from your home screen.") });
+function isStandalone(){ try{ return window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true }catch(e){ return false } }
+function phoneType(){ const ua=navigator.userAgent||"";
+  if(/FBAN|FBAV|FB_IAB|Instagram|Snapchat|Line\/|LinkedInApp/.test(ua)) return "inapp";
+  if(/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1)) return "ios";
+  if(/Android/.test(ua)) return "android"; return "other" }
+const SHARE_ICON=`<svg viewBox="0 0 24 24" width="18" height="18" aria-label="Share" role="img" style="vertical-align:-3px"><path d="M12 3v12M8 7l4-4 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 10H5v11h14V10h-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>`;
+function renderInstall(){
+  const bar=$("#installBar"); if(!bar) return;
+  let embedded=false; try{ embedded=window.self!==window.top }catch(e){ embedded=true }
+  const p=phoneType(), snoozed=S.installSnooze&&new Date(S.installSnooze)>new Date();
+  if(isStandalone()||embedded||snoozed||(p==="other"&&!deferredPrompt)){ bar.hidden=true; bar.innerHTML=""; return }
+  let body="";
+  if(p==="inapp") body=`<p style="margin:6px 0 0">This page opened inside another app. Tap the <b>•••</b> menu and choose <b>Open in Safari</b> (or <b>Open in browser</b>). Then you'll see how to add Five Deep to your home screen.</p>`;
+  else if(p==="ios") body=`<ol><li>Tap the <b>Share</b> button ${SHARE_ICON}. It's at the bottom of Safari, or the top right in Chrome.</li><li>Scroll down and tap <b>Add to Home Screen</b>.</li><li>Tap <b>Add</b>, then open Five Deep from the new icon.</li></ol>`;
+  else if(deferredPrompt) body=`<p style="margin:6px 0 10px">One tap and it's on your home screen like any other app.</p><button class="btn" id="installNow" style="margin:0 0 4px">Install Five Deep</button>`;
+  else body=`<ol><li>Tap the <b>⋮</b> menu at the top right of Chrome.</li><li>Tap <b>Install app</b> or <b>Add to Home screen</b>.</li><li>Open Five Deep from the new icon.</li></ol>`;
+  bar.innerHTML=`<section class="install" aria-label="Add Five Deep to your home screen"><b>Add Five Deep to your home screen</b>${body}
+    <p class="small" style="margin:6px 0 0">Do this before you log workouts. Anything logged here in the browser stays in the browser and won't move to the home screen app.</p>
+    <button class="linkbtn" id="installLater" style="margin:8px 0 0">Not now</button></section>`;
+  bar.hidden=false }
+
 /* ---------- HOW TO USE ---------- */
 let helpBack="today";
 const GUIDE=[
@@ -885,6 +915,8 @@ function renderHelp(){
 document.addEventListener("click",e=>{
   const id=e.target.id;
   if(id==="shareBtn"){ shareApp(); return }
+  if(id==="installLater"){ S.installSnooze=new Date(Date.now()+7*864e5).toISOString(); save(); renderInstall(); return }
+  if(id==="installNow"&&deferredPrompt){ const d=deferredPrompt; d.prompt(); Promise.resolve(d.userChoice).then(()=>{ deferredPrompt=null; renderInstall() }); return }
   if((id==="helpBtn"||id==="openHelp")&&S.ack){ if(tab!=="help") helpBack=tab; tab="help"; confirmMode=null; render(); window.scrollTo(0,0) }
   if(id==="helpDone"){ tab=helpBack||"today"; render(); window.scrollTo(0,0) }
 });
@@ -892,6 +924,7 @@ document.addEventListener("click",e=>{
 /* ---------- ROUTING / EVENTS ---------- */
 function renderHeader(){ $("#who").textContent=S.name?S.name:"" }
 function render(){
+  renderInstall();
   if(!S.ack){ renderTerms(); return }
   document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-selected",b.dataset.view===tab));
   $("#helpBtn").hidden=false;
