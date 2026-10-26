@@ -579,7 +579,12 @@ view.addEventListener("input",e=>{ if(e.target.id==="bwIn"){ const er=$("#bwErr"
 function num(id,val,label,step){ return `<div class="field"><label for="${id}">${label}</label><input id="${id}" type="number" inputmode="decimal" step="${step||5}" value="${val}"></div>` }
 function renderSettings(){
   const st=S.settings;
-  let h=`<form id="setForm">
+  let h=`<fieldset><legend>Share Five Deep</legend>
+    <div class="share"><img src="${SHARE_QR}" alt="QR code that opens fivedeep-app.github.io" width="150" height="150">
+      <p class="small" style="margin:0">Have a friend scan this with their phone camera, or send them the link with install steps.</p></div>
+    <p class="shareurl">fivedeep&#8209;app.github.io</p>
+    <button class="btn" id="shareBtn" style="margin-top:12px">Share the app</button></fieldset>
+  <form id="setForm">
   <fieldset><legend>Lifter</legend><div class="field"><label for="f-name">Name</label><input id="f-name" type="text" value="${esc(S.name)}" placeholder="Your name"></div>
     <div class="field"><label for="f-bw">Bodyweight (lb)<br><span class="small">Optional</span></label><input id="f-bw" type="number" inputmode="decimal" step="0.1" placeholder="165.0" value="${(S.bw&&S.bw.length)?S.bw.slice().sort((a,b)=>a.date<b.date?-1:1).pop().w:""}"></div></fieldset>
   <fieldset><legend>Next working weights (lb)</legend>
@@ -606,11 +611,6 @@ function renderSettings(){
     <label class="small" for="fileIn" style="display:block;margin-top:10px">Or restore from a backup file:</label>
     <input id="fileIn" type="file" accept="application/json,.json">
   </fieldset>
-  <fieldset><legend>Share Five Deep</legend>
-    <div class="share"><img src="${SHARE_QR}" alt="QR code that opens fivedeep-app.github.io" width="150" height="150">
-      <p class="small" style="margin:0">Have a friend scan this with their phone camera, or send them the link with install steps.</p></div>
-    <p class="shareurl">fivedeep&#8209;app.github.io</p>
-    <button class="btn" id="shareBtn" style="margin-top:12px">Share the app</button></fieldset>
   <fieldset><legend>Help</legend><button class="btn ghost" id="openHelp" style="margin:0">How to use Five Deep</button></fieldset>
   <fieldset><legend>Safety and terms</legend><div class="terms">${TERMS}</div>
     <p class="small" style="margin:0">${S.ack?"Accepted on "+new Date(S.ack).toLocaleDateString(undefined,{month:"long",day:"numeric",year:"numeric"})+".":""}</p></fieldset>
