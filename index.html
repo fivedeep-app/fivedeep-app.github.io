@@ -1,0 +1,908 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#16181b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Five Deep">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+<title>Five Deep</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: one-column gym logbook in team red and silver. Big tap targets, today's lifts as stacked cards, rest timer pinned to the bottom, progress dashboard as its own tab. */
+:root{
+  --bg:#eceef1; --surface:#ffffff; --ink:#16181b; --muted:#5d636b; --line:#cfd3d8;
+  --accent:#c8102e; --accent-ink:#ffffff; --silver:#8a9099; --good:#1f7a45; --miss:#b45309; --soft:#dfe2e6;
+  --display:"Saira Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121315; --surface:#1c1e21; --ink:#eceef1; --muted:#a2a8b0; --line:#2f3236;
+  --accent:#e8384f; --accent-ink:#ffffff; --silver:#b8bec6; --good:#4cc283; --miss:#f0a050; --soft:#25282c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121315; --surface:#1c1e21; --ink:#eceef1; --muted:#a2a8b0; --line:#2f3236;
+  --accent:#e8384f; --accent-ink:#ffffff; --silver:#b8bec6; --good:#4cc283; --miss:#f0a050; --soft:#25282c; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;-webkit-tap-highlight-color:transparent}
+.wrap{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 140px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-block:8px 4px}
+h1 .d{color:var(--silver)}
+h1 .f{color:var(--accent)}
+h1{font-family:var(--display);font-weight:800;font-size:30px;letter-spacing:.02em;text-transform:uppercase;margin:0;line-height:1}
+.who{color:var(--muted);font-size:14px}
+nav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;background:var(--soft);border-radius:12px;padding:4px;margin-block:12px 16px}
+nav button{font:600 14px var(--body);border:0;background:transparent;color:var(--muted);padding:10px 0;border-radius:9px;cursor:pointer}
+nav button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.label{font:700 12px var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.dayhead{display:flex;justify-content:space-between;align-items:end;gap:12px;margin-bottom:12px}
+.daytype{font-family:var(--display);font-weight:800;font-size:44px;line-height:.9;text-transform:uppercase}
+.daytype span{color:var(--accent)}
+.note{background:var(--soft);border-radius:12px;padding:12px 14px;font-size:14px;color:var(--ink);margin-bottom:14px}
+.lift{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+.lifttop{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.liftname{font-family:var(--display);font-weight:700;font-size:24px;text-transform:uppercase;letter-spacing:.02em}
+.vid{display:inline-block;margin-top:2px;font-size:14px;color:var(--accent);font-weight:600;text-decoration:none;white-space:nowrap}
+.vid:hover{text-decoration:underline}
+.vrow{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-top:1px solid var(--line);color:var(--ink);text-decoration:none;font-weight:500}
+.vrow:first-of-type{border-top:0}
+.scheme{color:var(--muted);font-size:14px;font-weight:500}
+.wt{display:flex;align-items:center;gap:6px}
+.wt output{font-family:var(--display);font-weight:800;font-size:30px;min-width:4ch;text-align:right;font-variant-numeric:tabular-nums}
+.wt small{color:var(--muted);font-weight:600;margin-left:2px}
+.step{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:700 20px var(--body);cursor:pointer;line-height:1}
+.plates{font-size:13px;color:var(--muted);margin:4px 0 10px;font-variant-numeric:tabular-nums}
+.fails{color:var(--miss);font-weight:600}
+.sets{display:flex;gap:8px;flex-wrap:wrap}
+.set{width:54px;height:54px;border-radius:50%;border:2px dashed var(--line);background:transparent;color:var(--muted);font:800 22px var(--display);cursor:pointer;font-variant-numeric:tabular-nums}
+.set.done{border:2px solid var(--accent);background:var(--accent);color:var(--accent-ink)}
+.set.miss{border:2px solid var(--miss);background:transparent;color:var(--miss)}
+.btn{display:block;width:100%;font:700 17px var(--body);border:0;border-radius:12px;padding:15px;background:var(--accent);color:var(--accent-ink);cursor:pointer;margin-top:6px}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.danger{background:var(--miss);color:#fff}
+.row{display:flex;gap:10px}
+.row>*{flex:1;min-width:0}
+.confirm{border:2px solid var(--miss);border-radius:14px;padding:14px;margin-top:10px;background:var(--surface)}
+.timer{position:fixed;left:0;right:0;bottom:0;background:var(--ink);color:var(--bg);padding:12px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));z-index:20}
+.timer .in{max-width:560px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.timer .t{font:800 34px var(--display);font-variant-numeric:tabular-nums;line-height:1}
+.timer .msg{font-size:14px;opacity:.85}
+.timer button{font:700 14px var(--body);border:1px solid currentColor;background:transparent;color:inherit;border-radius:10px;padding:8px 12px;cursor:pointer}
+.timer.up{background:var(--good);color:#fff}
+.hist{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px}
+.hist h3{margin:0 0 6px;font:700 18px var(--display);text-transform:uppercase;display:flex;justify-content:space-between;gap:8px}
+.hist h3 span{color:var(--muted);font:500 14px var(--body);text-transform:none}
+.hl{display:flex;justify-content:space-between;gap:8px;font-size:15px;padding:3px 0;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+.hl:first-of-type{border-top:0}
+.ok{color:var(--good);font-weight:600}.bad{color:var(--miss);font-weight:600}
+.empty{color:var(--muted);text-align:center;padding:30px 10px}
+fieldset{border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:0 0 14px;background:var(--surface)}
+legend{font:700 13px var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:0 6px}
+.field{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 0}
+.field label{font-weight:500}
+.field input{width:96px;font:600 17px var(--body);padding:8px 10px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--ink);text-align:right}
+.field input[type=text]{width:160px;text-align:left}
+textarea{width:100%;min-height:110px;font:13px ui-monospace,Menlo,monospace;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:10px}
+.small{font-size:13px;color:var(--muted)}
+.toast{position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-weight:600;font-size:14px;z-index:30}
+/* progress dashboard */
+.review{border:2px solid var(--accent)}
+.rv{padding:8px 0;border-top:1px solid var(--line)}
+.rvtop{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.rv:first-of-type{border-top:0}
+.terms p{margin:0 0 10px;font-size:15px;line-height:1.5}
+.chk{display:flex;gap:10px;align-items:flex-start;padding:10px 0;font-weight:500;border-top:1px solid var(--line)}
+.chk input{width:22px;height:22px;flex:none;margin-top:1px;accent-color:var(--accent)}
+.err{color:var(--accent);font-weight:600;font-size:14px;margin:4px 0 0}
+.bwin .row input{font:600 18px var(--body);padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);min-width:0}
+.bwlog{margin-top:10px}.bwlog summary{cursor:pointer;font-weight:600;font-size:14px;padding:6px 0}
+.linkbtn{border:0;background:none;color:var(--muted);font:500 13px var(--body);text-decoration:underline;cursor:pointer;margin-left:6px}
+.comeback{border:2px solid var(--accent);background:var(--surface)}
+.moves{margin:6px 0 10px;padding-left:20px;font-size:16px;line-height:1.5}
+.moves li{margin:2px 0}
+.wod h2{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-top:2px}
+.wod .fmt{font:600 14px var(--body);color:var(--muted);text-transform:none;letter-spacing:0}
+.wod.monthly{border:2px solid var(--silver)}
+.warn{background:var(--soft);border-radius:10px;padding:10px 12px;font-size:14px;margin-top:10px}
+.wodclock{text-align:center}
+.wodclock .moves{text-align:left;display:inline-block;margin:14px 0}
+.wbig{font:800 96px/1 var(--display);font-variant-numeric:tabular-nums;margin:6px 0 4px}
+.wsub{font-size:16px;color:var(--muted);font-weight:500}
+.wtask{font:800 28px/1.2 var(--display);letter-spacing:.04em;min-height:34px;text-transform:uppercase}
+.wtask.go{color:var(--accent)}.wtask.rest{color:var(--muted)}
+.btn.big{font-size:22px;padding:20px;margin-top:14px}
+.wrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.wrow>div{min-width:0}.wrow .chip{white-space:nowrap}
+.mtag{font:600 12px var(--body);color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:5px 10px;white-space:nowrap}
+.mtag.on{color:var(--accent);border-color:var(--accent)}
+.wodlist summary{cursor:pointer;font:700 20px var(--display);text-transform:uppercase;letter-spacing:.03em}
+.lvl{display:flex;gap:18px;flex-wrap:wrap;padding:10px 0;font-weight:500}
+.lvl input{accent-color:var(--accent);width:18px;height:18px;vertical-align:-3px;margin:0 4px 0 0}
+.tin{display:flex;align-items:center;gap:4px}.field .tin input{width:64px}
+.cal button.wd{background:var(--soft);color:var(--ink);box-shadow:inset 0 0 0 2px var(--silver);cursor:pointer;font-weight:700}
+.cal button.wd small{font:700 10px var(--body)}
+.mvrow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 10px}
+.mv{font:600 13px var(--body);color:var(--accent);border:1px solid var(--line);border-radius:999px;padding:5px 10px;text-decoration:none;white-space:nowrap}
+.mv:hover{border-color:var(--accent)}
+.extag{font:700 11px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border:1px dashed var(--silver);border-radius:999px;padding:3px 9px}
+.hdr{display:flex;align-items:center;gap:10px;min-width:0}
+.hdr .who{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:40vw}
+.help{width:32px;height:32px;flex:none;border-radius:50%;border:1.5px solid var(--silver);background:transparent;color:var(--ink);font:700 16px var(--body);cursor:pointer;line-height:1}
+.help:hover{border-color:var(--accent);color:var(--accent)}
+.guide h2{margin-top:2px}
+.guide ol{margin:4px 0 14px;padding-left:22px}
+.guide li{margin:0 0 12px}
+.guide li::marker{font:800 18px var(--display);color:var(--accent)}
+.guide h3{font:700 18px var(--display);text-transform:uppercase;letter-spacing:.03em;margin:0 0 2px}
+.guide p{margin:0;font-size:15px;line-height:1.5}
+.set.picking{outline:3px solid var(--ink);outline-offset:2px}
+.repick{margin-top:12px;padding:10px 12px;background:var(--soft);border-radius:12px}
+.rphead{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.rphead .linkbtn{margin:0;padding:4px 0}
+.rp{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin-top:8px}
+.rpb{min-width:0;height:44px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:800 20px var(--display);cursor:pointer}
+.rpb.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.rpb.clr{font:600 14px var(--body);padding:0 12px}
+.timer .tip{opacity:1;font-weight:600;margin-top:4px}
+.backup{border:2px solid var(--silver);background:var(--surface)}
+.sample{border:1px dashed var(--silver);border-radius:12px;padding:10px 14px;font-size:14px;margin-bottom:14px;color:var(--ink)}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.tile .v{font:800 32px var(--display);line-height:1.05;font-variant-numeric:tabular-nums}
+.tile .v.red{color:var(--accent)}
+.tile .k{font-size:13px;color:var(--muted)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+.panel h2{font:700 20px var(--display);text-transform:uppercase;letter-spacing:.03em;margin:0 0 10px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.chip{font:600 13px var(--body);border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:6px 11px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.chart svg{display:block;width:100%;height:auto}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.lt{display:grid;grid-template-columns:minmax(0,1.6fr) repeat(3,minmax(0,1fr));gap:6px 8px;font-size:15px;font-variant-numeric:tabular-nums;align-items:baseline}
+.lt .h{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.lt .n{text-align:right}
+.up{color:var(--good);font-weight:600}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center}
+.cal .dw{font-size:11px;color:var(--muted);font-weight:600;padding-bottom:2px}
+.cal button{aspect-ratio:1;max-width:100%;border:0;border-radius:9px;background:var(--bg);color:var(--muted);font:500 14px var(--body);cursor:default;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;line-height:1.05}
+.cal button.w{background:var(--accent);color:var(--accent-ink);cursor:pointer;font-weight:700}
+.cal button.w small{font:700 10px var(--body);opacity:.9}
+.cal button.today{outline:2px solid var(--silver);outline-offset:-2px}
+.cal button.sel{outline:3px solid var(--ink);outline-offset:-3px}
+.calnav{display:flex;gap:6px}
+.calnav button{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--ink);font:700 16px var(--body);cursor:pointer}
+@media (max-width:360px){
+  .liftname{font-size:20px}
+  .wt{gap:4px}.wt output{font-size:26px;min-width:3ch}
+  .step{width:32px;height:32px;font-size:18px}
+  .set{width:46px;height:46px;font-size:20px}
+  .sets{gap:6px}
+  nav button{font-size:12px}
+  .wbig{font-size:80px}
+}
+@media (prefers-reduced-motion:no-preference){.set{transition:background .12s,border-color .12s}}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header><h1><span class="f">Five</span> <span class="d">Deep</span></h1><div class="hdr"><div class="who" id="who"></div><button class="help" id="helpBtn" aria-label="How to use Five Deep">?</button></div></header>
+  <nav role="tablist">
+    <button role="tab" id="tab-today" aria-selected="true" data-view="today">Today</button>
+    <button role="tab" id="tab-wod" aria-selected="false" data-view="wod">WOD</button>
+    <button role="tab" id="tab-progress" aria-selected="false" data-view="progress">Progress</button>
+    <button role="tab" id="tab-history" aria-selected="false" data-view="history">History</button>
+    <button role="tab" id="tab-settings" aria-selected="false" data-view="settings">Settings</button>
+  </nav>
+  <main id="view"></main>
+</div>
+<div class="timer" id="timer" hidden><div class="in"><div><div class="t" id="tclock">1:30</div><div class="msg" id="tmsg">Rest</div><div class="msg" id="tend"></div><div class="msg tip" id="ttip" hidden>Keep the app open and turn off auto-lock so you hear the beep.</div></div><button id="tskip">Skip rest</button></div></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+const APP_NAME="Five Deep";
+const KEY="fivedeep.v1";
+const LIFTS={squat:"Squat",bench:"Bench Press",row:"Barbell Row",ohp:"Overhead Press",dead:"Deadlift"};
+const PLAN={A:["squat","bench","row"],B:["squat","ohp","dead"]};
+const SETS={squat:5,bench:5,row:5,ohp:5,dead:1};
+const PLATES=[45,35,25,10,5,2.5];
+// Short form demos from Barbell Logic's "Gym Shorts" series
+const VIDEOS={squat:"jyopTyOjXb0",bench:"t3f2L7NRRUY",row:"qbES7k4HDf8",ohp:"AhGW3XFG3M8",dead:"3oMjoOm5O18"};
+
+function fresh(){
+  return {
+    name:"", setupDone:false,
+    settings:{inc:5,incDead:5,deloadPct:10,restOk:90,restFail:180,bar:45},
+    lifts:{squat:{w:95,fails:0},bench:{w:75,fails:0},row:{w:75,fails:0},ohp:{w:55,fails:0},dead:{w:115,fails:0}},
+    next:"A", history:[], current:null
+  };
+}
+let S;
+try{ S=JSON.parse(localStorage.getItem(KEY)) }catch(e){ S=null }
+if(!S||!S.lifts) S=fresh();
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify(S)) }catch(e){} }
+
+const $=s=>document.querySelector(s);
+const view=$("#view");
+let tab="today", confirmMode=null, pick=null;
+
+function round5(x){ return Math.max(S.settings.bar, Math.round(x/5)*5) }
+function platesFor(w){
+  let side=(w-S.settings.bar)/2; if(side<=0) return "Empty bar";
+  const out=[]; for(const p of PLATES){ while(side>=p-0.001){ out.push(p); side-=p } }
+  return "Each side: "+out.join(" + ")+(side>0.01?" (+"+(side*2)+" lb can't be loaded)":"");
+}
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])) }
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>t.hidden=true,2200) }
+
+function startSession(){
+  S.current={type:S.next, started:Date.now(), lifts:PLAN[S.next].map(k=>({key:k,w:S.lifts[k].w,sets:Array(SETS[k]).fill(null)}))};
+  save(); wake();
+}
+
+/* ---------- TODAY ---------- */
+function workoutTouched(c){ return c.lifts.some(L=>L.sets.some(r=>r!==null)||L.w!==S.lifts[L.key].w) }
+function daysOff(){ return S.history.length?Math.floor((Date.now()-new Date(S.history[0].date))/864e5):0 }
+function breakDue(){ return S.history.length&&daysOff()>=14&&S.breakAck!==S.history[0].date&&!(S.current&&S.current.lifts.some(L=>L.sets.some(r=>r!==null))) }
+function renderToday(){
+  if(!S.current) startSession();
+  const c=S.current;
+  let h=`<div class="dayhead"><div><div class="label">Workout</div><div class="daytype">Day <span>${c.type}</span></div></div>
+    <div class="small" style="text-align:right">Next up: Day ${c.type==="A"?"B":"A"}<br>${S.history.length} session${S.history.length===1?"":"s"} logged</div></div>`;
+  if(S.history.length<3) h+=`<p class="small" style="margin:0 0 12px">Tap a circle when you finish a set of 5. Got fewer? Tap it again. Use − and + to change today's weight.</p>`;
+  if(backupDue()&&!c.lifts.some(L=>L.sets.some(r=>r!==null))){
+    const d=S.lastBackup?Math.floor((Date.now()-new Date(S.lastBackup))/864e5):null;
+    h+=`<div class="note backup"><b>Back up your logs.</b> ${d===null?"You haven't backed up yet.":`It's been ${d} days since your last backup.`} Your workouts live only on this phone. Copy a backup and paste it into Notes.
+      <div class="row" style="margin-top:10px"><button class="btn ghost" id="bkLater" style="margin:0">Later</button><button class="btn" id="bkCopy" style="margin:0">Copy backup</button></div></div>`;
+  }
+  if(!S.setupDone) h+=`<div class="note"><b>First time?</b> These are sample starting weights. Go to <b>Settings</b> and enter your name, your starting weights, and your bodyweight if you want to track it, before your first session.</div>`;
+  if(breakDue()){
+    const prev=Object.keys(LIFTS).map(k=>`${LIFTS[k]} ${S.lifts[k].w} → ${round5(S.lifts[k].w*0.9)}`).join(", ");
+    h+=`<div class="note comeback"><b>Welcome back. It's been ${daysOff()} days since your last workout.</b>
+      <p style="margin:6px 0">Coming back about 10% lighter gives your body time to catch up and lowers the risk of getting hurt. You'll be back to your old weights in a couple of weeks.</p>
+      <p class="small" style="margin:0 0 10px">${prev}</p>
+      <div class="row"><button class="btn ghost" id="breakKeep" style="margin:0">Keep my weights</button><button class="btn" id="breakDrop" style="margin:0">Drop 10%</button></div></div>`;
+  }
+  const startedDay=dayKey(c.started||Date.now());
+  if(startedDay!==dayKey(new Date())&&c.lifts.some(L=>L.sets.some(r=>r!==null)))
+    h+=`<div class="note">You started this workout on <b>${new Date(c.started).toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"})}</b>. Pick up where you left off, or discard it at the bottom and start fresh.</div>`;
+  c.lifts.forEach((L,i)=>{
+    const f=S.lifts[L.key].fails;
+    h+=`<section class="lift">
+      <div class="lifttop"><div><div class="liftname">${LIFTS[L.key]}</div><div class="scheme">${SETS[L.key]}×5</div><div><a class="vid" href="https://www.youtube.com/watch?v=${VIDEOS[L.key]}" target="_blank" rel="noopener">Watch form ▶</a></div></div>
+      <div class="wt"><button class="step" data-adj="${i}" data-d="-1" aria-label="Lower weight">−</button><output>${L.w}</output><small>lb</small><button class="step" data-adj="${i}" data-d="1" aria-label="Raise weight">+</button></div></div>
+      <div class="plates">${platesFor(L.w)}${f?` · <span class="fails">Missed last ${f} time${f>1?"s":""}</span>`:""}</div>
+      <div class="sets">${L.sets.map((r,j)=>`<button class="set ${r===null?"":r===5?"done":"miss"}${pick&&pick.l===i&&pick.j===j?" picking":""}" data-l="${i}" data-s="${j}" aria-label="Set ${j+1}: ${r===null?"not done":r+" reps"}">${r===null?"":r}</button>`).join("")}</div>
+      ${pick&&pick.l===i?`<div class="repick" role="group" aria-label="Reps for set ${pick.j+1}"><div class="rphead"><span class="small">Set ${pick.j+1}: how many reps did you get?</span><button class="linkbtn" data-reps="clear">Clear</button></div>
+        <div class="rp">${[1,2,3,4,5].map(n=>`<button class="rpb${L.sets[pick.j]===n?" on":""}" data-reps="${n}">${n}</button>`).join("")}</div></div>`:""}
+    </section>`;
+  });
+  if(confirmMode==="finish"){
+    h+=`<div class="confirm"><b>Some sets aren't marked.</b><p class="small" style="margin:6px 0 10px">Unmarked sets count as missed, so those lifts won't go up next time.</p>
+      <div class="row"><button class="btn ghost" id="cancelFinish">Keep lifting</button><button class="btn danger" id="forceFinish">Finish anyway</button></div></div>`;
+  }else{
+    h+=`<button class="btn" id="finish">Finish workout</button>`;
+  }
+  if(confirmMode==="discard"){
+    h+=`<div class="confirm"><b>Throw out this workout?</b><p class="small" style="margin:6px 0 10px">Nothing gets saved and no lifts count as missed. You'll start Day ${c.type} fresh at your normal weights.</p>
+      <div class="row"><button class="btn ghost" id="cancelDiscard">Keep it</button><button class="btn danger" id="doDiscard">Discard</button></div></div>`;
+  }else if(confirmMode!=="finish"&&workoutTouched(c)){
+    h+=`<button class="btn ghost" id="discardBtn">Discard this workout</button>`;
+  }
+  h+=`<div class="panel" style="margin-top:20px"><h2>Form videos</h2><p class="small" style="margin:-4px 0 6px">All five lifts. Day A is squat, bench, and row. Day B is squat, overhead press, and deadlift.</p>
+    ${Object.keys(LIFTS).map(k=>`<a class="vrow" href="https://www.youtube.com/watch?v=${VIDEOS[k]}" target="_blank" rel="noopener"><span>${LIFTS[k]}</span><span class="vid">Watch ▶</span></a>`).join("")}</div>`;
+  view.innerHTML=h;
+}
+
+function backupDue(){
+  if(S.history.length<3) return false;
+  if(S.backupSnooze&&new Date(S.backupSnooze)>new Date()) return false;
+  return !S.lastBackup||(Date.now()-new Date(S.lastBackup))>14*864e5 }
+function copyBackup(fromBanner){
+  const t=JSON.stringify(S);
+  const done=()=>{ S.lastBackup=new Date().toISOString(); save(); toast("Backup copied. Paste it into Notes."); if(tab==="today") renderToday() };
+  const fail=()=>{ if(fromBanner){ tab="settings"; render(); window.scrollTo(0,document.body.scrollHeight) } const ta=$("#backupText"); if(ta){ ta.value=t; ta.focus(); ta.select() } toast("Text selected. Copy it, then paste it into Notes.") };
+  try{ if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done,fail); else fail() }catch(e){ fail() } }
+function finishWorkout(){
+  const c=S.current, st=S.settings, results=[];
+  c.lifts.forEach(L=>{
+    const lift=S.lifts[L.key];
+    const ok=L.sets.every(r=>r===5);
+    let change="";
+    if(ok){ const inc=L.key==="dead"?st.incDead:st.inc; lift.w=L.w+inc; lift.fails=0; change=`+${inc}` }
+    else{
+      lift.w=L.w; lift.fails+=1;
+      if(lift.fails>=3){ const nw=round5(L.w*(1-st.deloadPct/100)); change=`Deload to ${nw}`; lift.w=nw; lift.fails=0 }
+      else change=`Repeat (${lift.fails}/3)`;
+    }
+    const left=3-lift.fails;
+    const msg= ok?`All sets made. Up ${L.key==="dead"?st.incDead:st.inc} lb.`
+      : change.startsWith("Deload")?`Third miss in a row, so it dropped ${st.deloadPct}% to ${lift.w} lb. Build back up from here.`
+      : `Missed reps. Same weight next time. ${left} more miss${left===1?"":"es"} in a row and it drops ${st.deloadPct}%.`;
+    results.push({key:L.key,w:L.w,sets:L.sets.map(r=>r===null?0:r),ok,change,msg});
+  });
+  S.history.unshift({date:new Date().toISOString(),type:c.type,lifts:results});
+  S.next=c.type==="A"?"B":"A"; S.current=null; confirmMode=null;
+  S.review=results.map(r=>({key:r.key,change:r.change,msg:r.msg})); pick=null;
+  save(); stopTimer(); toast("Workout saved"); tab="progress"; render(); window.scrollTo(0,0);
+}
+
+/* ---------- TIMER ---------- */
+let tEnd=0,tInt=null,audioCtx=null;
+// iPhone only allows sound from a page after a tap, so unlock audio on the set tap that starts the timer
+function unlockAudio(){ try{ audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==="suspended") audioCtx.resume(); const b=audioCtx.createBuffer(1,1,22050),src=audioCtx.createBufferSource(); src.buffer=b; src.connect(audioCtx.destination); src.start(0) }catch(e){} }
+function beep(){ try{ audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==="suspended") audioCtx.resume(); const o=audioCtx.createOscillator(),g=audioCtx.createGain(); o.frequency.value=880; o.connect(g); g.connect(audioCtx.destination); g.gain.value=.25; const t0=audioCtx.currentTime; g.gain.setValueAtTime(.25,t0); g.gain.setValueAtTime(0,t0+.2); g.gain.setValueAtTime(.25,t0+.3); g.gain.setValueAtTime(0,t0+.5); g.gain.setValueAtTime(.25,t0+.6); o.start(); o.stop(t0+.85) }catch(e){} try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){} }
+function startTimer(sec,msg){
+  unlockAudio(); wake();
+  tEnd=Date.now()+sec*1000; $("#tmsg").textContent=msg; $("#timer").hidden=false; $("#timer").classList.remove("up");
+  $("#tend").textContent="Next set at "+new Date(tEnd).toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit",second:"2-digit"});
+  S.timerTips=(S.timerTips||0)+1; $("#ttip").hidden=S.timerTips>3; save();
+  clearInterval(tInt); tick(); tInt=setInterval(tick,250);
+}
+function tick(){
+  const left=Math.round((tEnd-Date.now())/1000);
+  if(left<=0){ $("#tclock").textContent="Go"; $("#tmsg").textContent="Rest is over. Next set."; $("#tend").textContent=""; if(!$("#timer").classList.contains("up")){ $("#timer").classList.add("up"); beep() } return }
+  $("#tclock").textContent=Math.floor(left/60)+":"+String(left%60).padStart(2,"0");
+}
+function stopTimer(){ clearInterval(tInt); $("#timer").hidden=true }
+$("#tskip").onclick=stopTimer;
+let lock=null; async function wake(){ try{ if(navigator.wakeLock&&!lock){ lock=await navigator.wakeLock.request("screen"); lock.addEventListener("release",()=>lock=null) } }catch(e){} }
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState!=="visible") return;
+  if(S.current) wake();
+  // back from a locked screen or another app: catch the timer up right away
+  if(!$("#timer").hidden && tEnd) tick();
+  if(tab==="wod"&&S.wodRun) wodTick();
+});
+
+/* ---------- HISTORY ---------- */
+function renderHistory(){
+  if(!S.history.length){ view.innerHTML=`<div class="empty">No workouts yet. Finish your first session on the Today tab and it shows up here.</div>`; return }
+  view.innerHTML=S.history.map(histCard).join("");
+}
+function histCard(h){
+    const d=new Date(h.date);
+    return `<article class="hist"><h3>Day ${h.type}<span>${d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric",year:"numeric"})}</span></h3>
+      ${h.lifts.map(l=>`<div class="hl"><span>${LIFTS[l.key]} <b>${l.w}</b> lb</span><span>${l.sets.join("/")} · <span class="${l.ok?"ok":"bad"}">${esc(l.change)}</span></span></div>`).join("")}
+    </article>`;
+}
+
+/* ---------- TERMS ---------- */
+const TERMS=`<p><b>Five Deep is a workout log.</b> It records the weights and reps you enter and suggests your next weight using a standard 5x5 program. It is not medical advice, coaching, or a training plan made for you.</p>
+<p><b>Lifting and conditioning workouts carry a real risk of injury.</b> Talk to a doctor before starting if you have any injury or health condition. Learn proper form from a qualified coach. Use a spotter or safety bars on squat and bench. Stop right away if something hurts.</p>
+<p><b>You are responsible for how you train.</b> You choose the weight on the bar every time. The app's suggestions can be wrong for you. By using Five Deep you accept the risks of training, and you agree that the people who made and shared this app are not responsible for any injury, loss, or damage connected to your use of it.</p>
+<p><b>Your data stays on this phone.</b> Nothing you log is sent to the app's owner or anyone else unless you share it yourself.</p>
+<p><b>Under 18?</b> A parent or guardian needs to read this with you before you use the app.</p>`;
+function renderTerms(){
+  $("#helpBtn").hidden=true;
+  document.querySelector("nav").hidden=true;
+  view.innerHTML=`<div class="panel terms"><h2>Before you start</h2>${TERMS}
+    <label class="chk"><input type="checkbox" id="t1"> I've read this and I understand it.</label>
+    <label class="chk"><input type="checkbox" id="t2"> I'm 18 or older, or my parent or guardian has read this with me.</label>
+    <p class="err" id="terr" hidden>Check both boxes to continue.</p>
+    <button class="btn" id="tok">I agree</button></div>`;
+  const clear=()=>{$("#terr").hidden=true}; $("#t1").onchange=clear; $("#t2").onchange=clear;
+  $("#tok").onclick=()=>{
+    if(!$("#t1").checked||!$("#t2").checked){ $("#terr").hidden=false; return }
+    S.ack=new Date().toISOString(); save(); document.querySelector("nav").hidden=false; helpBack="today"; tab=S.guideSeen?"today":"help"; render(); window.scrollTo(0,0);
+  };
+}
+
+/* ---------- PROGRESS ---------- */
+let pLift="squat", calMonth=null, calSel=null;
+function dayKey(d){ d=new Date(d); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0") }
+function sampleData(){
+  const start={squat:95,bench:75,row:75,ohp:55,dead:115}, w={...start}, fails={squat:0,bench:0,row:0,ohp:0,dead:0}, hist=[];
+  const missAt={bench:[9,11],ohp:[10]}; let type="A"; const day=new Date(); day.setHours(17,0,0,0); day.setDate(day.getDate()-34);
+  const dows=[1,3,5]; let n=0;
+  for(let i=0;i<35;i++){
+    day.setDate(day.getDate()+1); if(!dows.includes(day.getDay())) continue;
+    const lifts=PLAN[type].map(k=>{
+      const miss=(missAt[k]||[]).includes(n);
+      const sets=Array(SETS[k]).fill(5); if(miss) sets[SETS[k]-1]=3;
+      const r={key:k,w:w[k],sets,ok:!miss,change:miss?"Repeat (1/3)":"+5"};
+      if(!miss) w[k]+=5; return r;
+    });
+    hist.unshift({date:day.toISOString(),type,lifts}); type=type==="A"?"B":"A"; n++;
+  }
+  const lifts={}; Object.keys(w).forEach(k=>lifts[k]={w:w[k],fails:0});
+  return {history:hist,lifts};
+}
+function liftSeries(hist,k){
+  const pts=[]; hist.slice().reverse().forEach(h=>h.lifts.forEach(l=>{ if(l.key===k) pts.push({d:new Date(h.date),w:l.w,ok:l.ok}) })); return pts;
+}
+function niceStep(raw,steps){
+  if(steps){ for(const v of steps) if(v>=raw) return v; return steps[steps.length-1] }
+  const p=Math.pow(10,Math.floor(Math.log10(raw))), f=raw/p; return (f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*p }
+function chartSVG(pts,label,o){
+  o=o||{}; const fv=o.fmt||(v=>+v.toFixed(1)+" lb"), ft=o.tick||(v=>String(+v.toFixed(2))), minStep=o.minStep||1;
+  const W=340,H=190,pl=44,pr=14,pt=16,pb=28;
+  if(!pts.length) return `<p class="small">${o.empty||"No sessions with this lift yet."}</p>`;
+  const vals=pts.map(p=>p.w); let lo=Math.min(...vals), hi=Math.max(...vals);
+  const pad=Math.max((hi-lo)*0.15,minStep); lo=Math.max(0,lo-pad); hi=hi+pad;
+  const step=Math.max(minStep,niceStep((hi-lo)/4,o.steps)); lo=Math.floor(lo/step+1e-9)*step; hi=Math.ceil(hi/step-1e-9)*step; if(hi<=lo) hi=lo+step;
+  const n=pts.length, X=i=>pl+(n===1?(W-pl-pr)/2:i*(W-pl-pr)/(n-1)), Y=w=>pt+(H-pt-pb)*(1-(w-lo)/(hi-lo));
+  let g="";
+  for(let v=lo;v<=hi+1e-9;v+=step){ const y=Y(v).toFixed(1);
+    g+=`<line x1="${pl}" x2="${W-pr}" y1="${y}" y2="${y}" style="stroke:var(--line)" stroke-width="1"/><text x="${pl-6}" y="${(+y+4).toFixed(1)}" text-anchor="end" style="fill:var(--muted);font:11px var(--body)">${ft(v)}</text>` }
+  const line=pts.map((p,i)=>`${i?"L":"M"}${X(i).toFixed(1)},${Y(p.w).toFixed(1)}`).join("");
+  const area=line+`L${X(n-1).toFixed(1)},${Y(lo)}L${X(0).toFixed(1)},${Y(lo)}Z`;
+  const fmt=d=>d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+  const dots=pts.map((p,i)=>{ const last=i===n-1, r=last?5.5:3.2;
+    return p.ok?`<circle cx="${X(i).toFixed(1)}" cy="${Y(p.w).toFixed(1)}" r="${r}" style="fill:var(--accent);stroke:var(--surface)" stroke-width="${last?2:1}"/>`
+               :`<circle cx="${X(i).toFixed(1)}" cy="${Y(p.w).toFixed(1)}" r="${r+0.6}" style="fill:var(--surface);stroke:${o.hollow||"var(--miss)"}" stroke-width="2"/>` }).join("");
+  const last=pts[n-1], lastLab=last.lab||fv(last.w), ly=Y(last.w), labY=ly-10<pt+2?ly+18:ly-10;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${label} over time, latest ${lastLab}">
+    ${g}${o.noArea?"":`<path d="${area}" style="fill:var(--accent);opacity:.12"/>`}<path d="${line}" fill="none" style="stroke:var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>${dots}
+    <text x="${Math.min(X(n-1),W-pr).toFixed(1)}" y="${labY.toFixed(1)}" text-anchor="end" style="fill:var(--ink);font:700 13px var(--body)">${lastLab}</text>
+    <text x="${pl}" y="${H-8}" style="fill:var(--muted);font:11px var(--body)">${fmt(pts[0].d)}</text>
+    ${n>1?`<text x="${W-pr}" y="${H-8}" text-anchor="end" style="fill:var(--muted);font:11px var(--body)">${fmt(last.d)}</text>`:""}
+  </svg>`;
+}
+function calendarHTML(hist,wods){
+  const byDay={}; hist.forEach(h=>{ (byDay[dayKey(h.date)]=byDay[dayKey(h.date)]||[]).push(h) });
+  const wByDay={}; (wods||S.wods||[]).forEach(x=>{ (wByDay[dayKey(x.date)]=wByDay[dayKey(x.date)]||[]).push(x) });
+  if(!calMonth){ const ref=hist.length?new Date(hist[0].date):new Date(); calMonth=new Date(ref.getFullYear(),ref.getMonth(),1) }
+  const y=calMonth.getFullYear(), m=calMonth.getMonth(), first=new Date(y,m,1).getDay(), days=new Date(y,m+1,0).getDate(), tk=dayKey(new Date());
+  let cells="SMTWTFS".split("").map(d=>`<div class="dw">${d}</div>`).join("");
+  for(let i=0;i<first;i++) cells+=`<div></div>`;
+  let count=0, wcount=0;
+  for(let d=1;d<=days;d++){ const k=dayKey(new Date(y,m,d)), hs=byDay[k], ws=wByDay[k];
+    if(hs) count+=hs.length; if(ws) wcount+=ws.length;
+    const tag=(hs?hs.map(h=>h.type).join(""):"")+(ws?"W":""), lab=[hs?"Day "+hs.map(h=>h.type).join(" and "):"",ws?"WOD":""].filter(Boolean).join(" and ");
+    cells+=`<button class="${hs?"w":ws?"wd":""} ${k===tk?"today":""} ${k===calSel?"sel":""}" ${hs||ws?`data-day="${k}" aria-label="${k}, ${lab}"`:`tabindex="-1" aria-hidden="true"`}>${d}${tag?`<small>${tag}</small>`:""}</button>` }
+  let detail="";
+  if(calSel&&(byDay[calSel]||wByDay[calSel])) detail=(byDay[calSel]||[]).map(h=>`<div style="margin-top:12px">${histCard(h)}</div>`).join("")
+    +(wByDay[calSel]||[]).map(x=>`<div style="margin-top:12px"><article class="hist"><h3>WOD<span>${fmtD(x.date)}</span></h3><div class="hl"><span>${esc(wodById(x.id).name)}</span><span>${scoreText(x)}</span></div></article></div>`).join("");
+  return `<div class="panel"><h2><span>${calMonth.toLocaleDateString(undefined,{month:"long",year:"numeric"})}</span><span class="calnav"><button data-cal="-1" aria-label="Previous month">‹</button><button data-cal="1" aria-label="Next month">›</button></span></h2>
+    <div class="cal">${cells}</div><p class="small" style="margin:10px 0 0">${count} workout${count===1?"":"s"}${wcount?` and ${wcount} WOD${wcount===1?"":"s"}`:""} this month. Red is a lifting day, silver is a WOD. Tap a day to see it.</p>${detail}</div>`;
+}
+function fmtD(d){ return new Date(d).toLocaleDateString(undefined,{month:"short",day:"numeric"}) }
+function sgn(x){ x=Math.round(x*10)/10; return (x>0?"+":"")+x }
+function bodyweightHTML(){
+  const bw=(S.bw||[]).slice().sort((a,b)=>a.date<b.date?-1:1);
+  let h=`<div class="panel"><h2>Bodyweight</h2>
+    <div class="bwin"><label for="bwIn" class="small">Today's weight (lb)</label><div class="row"><input id="bwIn" type="number" inputmode="decimal" step="0.1" min="50" max="500" placeholder="165.0"><button class="btn" id="bwAdd" style="margin:0">Log</button></div>
+    <p class="err" id="bwErr" hidden>Enter a weight between 50 and 500 lb.</p></div>`;
+  if(!bw.length){ h+=`<p class="small" style="margin:10px 0 0">Optional. Weigh in once a week, same time of day, and your change since day one shows up here.</p></div>`; return h }
+  const first=bw[0], last=bw[bw.length-1], ch=last.w-first.w;
+  const cut=new Date(Date.now()-30*864e5).toISOString(); const base30=bw.filter(e=>e.date<=cut).pop()||first;
+  const ms=[]; let step=5; for(const e of bw){ while(e.w-first.w>=step){ ms.push(`+${step} lb on ${fmtD(e.date)}`); step+=5 } }
+  h+=`<div class="tiles" style="margin:12px 0">
+      <div class="tile"><div class="v">${+last.w.toFixed(1)}</div><div class="k">Now (lb)</div></div>
+      <div class="tile"><div class="v ${ch>0?"red":""}">${sgn(ch)}</div><div class="k">Since ${fmtD(first.date)}</div></div></div>`;
+  if(bw.length>1) h+=`<div class="chart">${chartSVG(bw.map(e=>({d:new Date(e.date),w:e.w,ok:true})),"Bodyweight",{minStep:1,steps:[1,2,5,10,20,50]})}</div>`;
+  h+=`<p class="small" style="margin:8px 0 0">Last 30 days: ${sgn(last.w-base30.w)} lb.${ms.length?" Milestones: "+ms.join(", ")+".":""}</p>
+    <details class="bwlog"><summary>All entries (${bw.length})</summary>${bw.slice().reverse().map(e=>`<div class="hl"><span>${fmtD(e.date)}</span><span>${+e.w.toFixed(1)} lb <button class="linkbtn" data-bwdel="${e.date}" aria-label="Delete ${fmtD(e.date)} entry">Delete</button></span></div>`).join("")}</details></div>`;
+  return h;
+}
+let pWod=null;
+function wodVal(x){ const s=x.score, w=wodById(x.id); return s.type==="rounds"?s.rounds+s.reps/(w.rr||100):s.type==="time"?s.sec:s.type==="splits"?s.avg:s.type==="minutes"?s.done:s.reps }
+function wodShort(x){ const s=x.score; return s.type==="rounds"?`${s.rounds} + ${s.reps}`:s.type==="time"?mmss(s.sec):s.type==="splits"?mmss(s.avg):s.type==="minutes"?`${s.done} of ${s.of} min`:`${s.reps} reps` }
+function sampleWods(){
+  const base=new Date(); base.setHours(10,0,0,0); base.setDate(base.getDate()-((base.getDay()+1)%7)); // most recent Saturday
+  const plan=[[49,"cindy","Scaled",{type:"rounds",rounds:9,reps:12}],[42,"helen","Rx",{type:"time",sec:742}],[35,"cindy","Rx",{type:"rounds",rounds:8,reps:20}],
+    [28,"burpeeclock","Rx",{type:"minutes",done:13,of:16}],[21,"cindy","Rx",{type:"rounds",rounds:10,reps:5}],[14,"helen","Rx",{type:"time",sec:701}],
+    [7,"grace","Scaled",{type:"time",sec:408}],[0,"cindy","Rx",{type:"rounds",rounds:11,reps:14}]];
+  return plan.map(([d,id,level,score])=>{ const t=new Date(base); t.setDate(t.getDate()-d); const e={date:t.toISOString(),id,level,score}; if(id==="grace") e.weight=95; return e }) }
+function wodProgressHTML(ws,example){
+  ws=ws||[];
+  let h=`<div class="panel" id="wodprog"><h2><span>WOD progress</span>${example?`<span class="extag">Example</span>`:""}</h2>`;
+  if(!ws.length) return h+`<p class="small" style="margin:0">No WODs logged yet. They're optional and live on the WOD tab. Once you log a few, your scores show up here.</p></div>`;
+  const ids=[...new Set(ws.map(x=>x.id))];
+  if(!pWod||!ids.includes(pWod)) pWod=ws[ws.length-1].id;
+  const mk=monthKey(new Date()), w=wodById(pWod), xs=ws.filter(x=>x.id===pWod), best=bestFor(pWod,ws), last=xs[xs.length-1];
+  const t=last.score.type, timeLike=t==="time"||t==="splits";
+  h+=`<div class="tiles" style="margin-bottom:12px"><div class="tile"><div class="v">${ws.length}</div><div class="k">WODs logged</div></div><div class="tile"><div class="v">${ws.filter(x=>monthKey(x.date)===mk).length}</div><div class="k">This month</div></div></div>`;
+  h+=`<div class="chips">${ids.map(id=>`<button class="chip" data-wodp="${id}" aria-pressed="${id===pWod}">${wodById(id).name}</button>`).join("")}</div>`;
+  const pts=xs.map(x=>({d:new Date(x.date),w:wodVal(x),ok:x.level!=="Scaled",lab:wodShort(x)}));
+  const opts=timeLike?{tick:v=>mmss(v),minStep:15,steps:[15,30,60,120,180,300,600,900,1200],noArea:true,hollow:"var(--silver)"}:{tick:v=>String(+v.toFixed(1)),minStep:1,noArea:true,hollow:"var(--silver)"};
+  h+=`<div class="chart">${chartSVG(pts,w.name,opts)}</div>
+    <div class="legend"><span><i style="background:var(--accent)"></i>As written</span><span><i style="border:2px solid var(--silver);width:10px;height:10px"></i>Easier version</span><span>${timeLike?"Lower is better":"Higher is better"}</span></div>`;
+  let trend="";
+  if(xs.length>1){ const prev=xs[xs.length-2]; trend=better(last,prev)&&last.level===prev.level?" Better than last time.":better(prev,last)&&last.level===prev.level?" Not your best day. It happens.":"" }
+  h+=`<p style="margin:12px 0 4px"><b>Best:</b> ${best?scoreText(best):"none"} · <b>Last:</b> ${scoreText(last)}</p>
+    <p class="small" style="margin:0">Done ${xs.length} time${xs.length===1?"":"s"}.${trend} Repeat the same WOD every few weeks to see real progress.</p>
+    <details class="bwlog"><summary>Every ${w.name} (${xs.length})</summary>${xs.slice().reverse().map(x=>`<div class="hl"><span>${fmtD(x.date)}</span><span>${scoreText(x)}</span></div>`).join("")}</details></div>`;
+  return h }
+function renderProgress(){
+  const real=S.history.length>0||(S.wods||[]).length>0, src=real?{history:S.history,lifts:S.lifts}:sampleData(), hist=src.history;
+  const cutoff=Date.now()-30*864e5, recent=hist.filter(h=>new Date(h.date)>=cutoff).length;
+  let added=0; const rows=Object.keys(LIFTS).map(k=>{
+    const s=liftSeries(hist,k); const start=s.length?s[0].w:src.lifts[k].w, now=src.lifts[k].w; added+=Math.max(0,now-start);
+    const best=s.filter(p=>p.ok).reduce((a,p)=>Math.max(a,p.w),0);
+    return {k,start,now,best};
+  });
+  const big3=src.lifts.squat.w+src.lifts.bench.w+src.lifts.dead.w;
+  let h="";
+  if(S.review&&S.review.length){
+    h+=`<div class="panel review"><h2>Next session</h2>
+      <p class="small" style="margin:-4px 0 10px">The app set these from today's results. Felt too light or too heavy? Change them now, 1 lb per tap.</p>
+      ${S.review.map(r=>`<div class="rv"><div class="rvtop"><div style="font-weight:600">${LIFTS[r.key]}</div>
+        <div class="wt"><button class="step" data-rv="${r.key}" data-d="-1" aria-label="Lower next ${LIFTS[r.key]} weight">−</button><output>${S.lifts[r.key].w}</output><small>lb</small><button class="step" data-rv="${r.key}" data-d="1" aria-label="Raise next ${LIFTS[r.key]} weight">+</button></div></div>
+        <div class="small">${esc(r.msg||r.change)}</div></div>`).join("")}
+      <button class="btn" id="rvDone">Looks good</button></div>`;
+  }
+  if(!real) h+=`<div class="sample"><b>Example data.</b> This is what your dashboard looks like after a few weeks of lifting and WODs. Your own numbers replace it after your first workout or WOD.</div>`;
+  h+=`<div class="tiles">
+    <div class="tile"><div class="v">${hist.length}</div><div class="k">Workouts logged</div></div>
+    <div class="tile"><div class="v">${recent}</div><div class="k">In the last 30 days</div></div>
+    <div class="tile"><div class="v red">+${added}</div><div class="k">Pounds added since start</div></div>
+    <div class="tile"><div class="v">${big3}</div><div class="k">Squat + bench + deadlift</div></div>
+  </div>`;
+  h+=`<div class="panel"><h2>Weight over time</h2>
+    <div class="chips">${Object.keys(LIFTS).map(k=>`<button class="chip" data-lift="${k}" aria-pressed="${k===pLift}">${LIFTS[k]}</button>`).join("")}</div>
+    <div class="chart">${chartSVG(liftSeries(hist,pLift),LIFTS[pLift],{minStep:5,steps:[5,10,20,25,50,100]})}</div>
+    <div class="legend"><span><i style="background:var(--accent)"></i>All sets made</span><span><i style="border:2px solid var(--miss);width:10px;height:10px"></i>Missed reps</span></div></div>`;
+  h+=`<div class="panel"><h2>Every lift</h2><div class="lt"><span class="h">Lift</span><span class="h n">Start</span><span class="h n">Next</span><span class="h n">Gain</span>
+    ${rows.map(r=>`<span>${LIFTS[r.k]}</span><span class="n">${r.start}</span><span class="n"><b>${r.now}</b></span><span class="n ${r.now>r.start?"up":""}">${r.now>r.start?"+":""}${r.now-r.start}</span>`).join("")}
+  </div><p class="small" style="margin:10px 0 0">Next is the weight the app will give you next session.</p></div>`;
+  const wds=real?(S.wods||[]):sampleWods();
+  h+=wodProgressHTML(wds,!real);
+  h+=bodyweightHTML();
+  h+=calendarHTML(hist,wds);
+  view.innerHTML=h;
+}
+view.addEventListener("click",e=>{
+  if(tab!=="progress") return;
+  if(e.target.id==="bwAdd"){ const v=parseFloat($("#bwIn").value);
+    if(!(v>=50&&v<=500)){ $("#bwErr").hidden=false; return }
+    S.bw=S.bw||[]; const k=dayKey(new Date()); S.bw=S.bw.filter(x=>dayKey(x.date)!==k); S.bw.push({date:new Date().toISOString(),w:Math.round(v*10)/10});
+    save(); renderProgress(); toast("Weight logged"); return }
+  const bd=e.target.closest("[data-bwdel]"); if(bd){ S.bw=(S.bw||[]).filter(x=>x.date!==bd.dataset.bwdel); save(); renderProgress(); return }
+  const rv=e.target.closest("[data-rv]"); if(rv){ const L=S.lifts[rv.dataset.rv]; L.w=Math.max(S.settings.bar,L.w+parseFloat(rv.dataset.d)); save(); renderProgress(); return }
+  if(e.target.id==="rvDone"){ S.review=null; save(); renderProgress(); toast("Next session set"); return }
+  const c=e.target.closest("[data-lift]"); if(c){ pLift=c.dataset.lift; renderProgress(); return }
+  const wp=e.target.closest("[data-wodp]"); if(wp){ pWod=wp.dataset.wodp; renderProgress(); return }
+  const n=e.target.closest("[data-cal]"); if(n){ calMonth=new Date(calMonth.getFullYear(),calMonth.getMonth()+(+n.dataset.cal),1); calSel=null; renderProgress(); return }
+  const d=e.target.closest("[data-day]"); if(d){ calSel=calSel===d.dataset.day?null:d.dataset.day; renderProgress() }
+});
+
+view.addEventListener("input",e=>{ if(e.target.id==="bwIn"){ const er=$("#bwErr"); if(er) er.hidden=true } });
+
+/* ---------- SETTINGS ---------- */
+function num(id,val,label,step){ return `<div class="field"><label for="${id}">${label}</label><input id="${id}" type="number" inputmode="decimal" step="${step||5}" value="${val}"></div>` }
+function renderSettings(){
+  const st=S.settings;
+  let h=`<form id="setForm">
+  <fieldset><legend>Lifter</legend><div class="field"><label for="f-name">Name</label><input id="f-name" type="text" value="${esc(S.name)}" placeholder="Your name"></div>
+    <div class="field"><label for="f-bw">Bodyweight (lb)<br><span class="small">Optional</span></label><input id="f-bw" type="number" inputmode="decimal" step="0.1" placeholder="165.0" value="${(S.bw&&S.bw.length)?S.bw.slice().sort((a,b)=>a.date<b.date?-1:1).pop().w:""}"></div></fieldset>
+  <fieldset><legend>Next working weights (lb)</legend>
+    ${Object.keys(LIFTS).map(k=>num("w-"+k,S.lifts[k].w,LIFTS[k],1)).join("")}
+    <p class="small">Start lighter than you think. The program adds weight every session, so easy early weeks are the point.</p>
+  </fieldset>
+  <fieldset><legend>Progression</legend>
+    ${num("s-inc",st.inc,"Add per success (most lifts)",2.5)}
+    ${num("s-incDead",st.incDead,"Add per success (deadlift)",2.5)}
+    ${num("s-deload",st.deloadPct,"Deload after 3 misses (%)",1)}
+    ${num("s-bar",st.bar,"Empty bar weight",5)}
+  </fieldset>
+  <fieldset><legend>Rest timer (seconds)</legend>
+    ${num("s-restOk",st.restOk,"After a full set",15)}
+    ${num("s-restFail",st.restFail,"After a missed set",15)}
+  </fieldset>
+  <button class="btn" type="submit">Save settings</button>
+  </form>
+  <fieldset style="margin-top:18px"><legend>Backup</legend>
+    <p class="small" style="margin-top:0">Your workouts are stored only on this phone. iPhone can clear website data when storage runs low, so back up every week or two.</p>
+    <div class="row"><button class="btn ghost" id="exportBtn">Download backup</button><button class="btn ghost" id="copyBtn">Copy backup text</button></div>
+    <textarea id="backupText" aria-label="Backup text" placeholder="Paste backup text here to restore" style="margin-top:10px"></textarea>
+    <button class="btn ghost" id="restoreBtn">Restore from pasted text</button>
+    <label class="small" for="fileIn" style="display:block;margin-top:10px">Or restore from a backup file:</label>
+    <input id="fileIn" type="file" accept="application/json,.json">
+  </fieldset>
+  <fieldset><legend>Help</legend><button class="btn ghost" id="openHelp" style="margin:0">How to use Five Deep</button></fieldset>
+  <fieldset><legend>Safety and terms</legend><div class="terms">${TERMS}</div>
+    <p class="small" style="margin:0">${S.ack?"Accepted on "+new Date(S.ack).toLocaleDateString(undefined,{month:"long",day:"numeric",year:"numeric"})+".":""}</p></fieldset>
+  <fieldset><legend>Reset</legend>`;
+  h+= confirmMode==="reset"
+    ? `<p><b>Erase everything on this phone?</b> All history and weights are deleted. This can't be undone.</p><div class="row"><button class="btn ghost" id="cancelReset">Cancel</button><button class="btn danger" id="doReset">Erase</button></div>`
+    : `<button class="btn ghost" id="resetBtn">Erase all data</button>`;
+  h+=`</fieldset>`;
+  view.innerHTML=h;
+
+  $("#setForm").onsubmit=e=>{
+    e.preventDefault();
+    const v=id=>parseFloat($("#"+id).value);
+    S.name=$("#f-name").value.trim();
+    const bwv=parseFloat($("#f-bw").value), bwl=(S.bw||[]).slice().sort((a,b)=>a.date<b.date?-1:1).pop();
+    if(bwv>=50&&bwv<=500&&(!bwl||Math.abs(bwl.w-bwv)>0.01)){ const k=dayKey(new Date()); S.bw=(S.bw||[]).filter(x=>dayKey(x.date)!==k); S.bw.push({date:new Date().toISOString(),w:Math.round(bwv*10)/10}) }
+    const changed=[];
+    Object.keys(LIFTS).forEach(k=>{ const w=v("w-"+k); if(w>0&&w!==S.lifts[k].w){ S.lifts[k].w=w; S.lifts[k].fails=0; changed.push(k) } });
+    const map={inc:"s-inc",incDead:"s-incDead",deloadPct:"s-deload",bar:"s-bar",restOk:"s-restOk",restFail:"s-restFail"};
+    for(const k in map){ const x=v(map[k]); if(x>=0) S.settings[k]=x }
+    if(S.current) S.current.lifts.forEach(L=>{ if(changed.includes(L.key)) L.w=S.lifts[L.key].w });
+    S.setupDone=true; save(); renderHeader(); toast("Settings saved");
+  };
+  $("#exportBtn").onclick=()=>{
+    try{
+      const blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});
+      const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+      a.download="five-deep-backup-"+new Date().toISOString().slice(0,10)+".json"; document.body.appendChild(a); a.click(); a.remove();
+      S.lastBackup=new Date().toISOString(); save();
+    }catch(e){ toast("Download blocked. Use Copy backup text instead.") }
+  };
+  $("#copyBtn").onclick=()=>{ $("#backupText").value=JSON.stringify(S); copyBackup(false) };
+  $("#restoreBtn").onclick=()=>restore($("#backupText").value);
+  $("#fileIn").onchange=e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>restore(r.result); r.readAsText(f) };
+  const rb=$("#resetBtn"); if(rb) rb.onclick=()=>{confirmMode="reset";renderSettings()};
+  const cr=$("#cancelReset"); if(cr) cr.onclick=()=>{confirmMode=null;renderSettings()};
+  const dr=$("#doReset"); if(dr) dr.onclick=()=>{ S=fresh(); confirmMode=null; save(); stopTimer(); renderHeader(); toast("All data erased"); renderSettings() };
+}
+function restore(txt){
+  try{ const d=JSON.parse(txt); if(!d||!d.lifts||!Array.isArray(d.history)) throw 0; S=d; save(); renderHeader(); toast("Backup restored ("+S.history.length+" sessions)"); renderSettings() }
+  catch(e){ toast("That isn't a valid backup. Check you pasted the whole thing.") }
+}
+
+/* ---------- WOD (optional conditioning) ---------- */
+// Movement demos from CrossFit's movement pages (crossfit.com/essentials); banded pull-up from BarBend
+const MOVES={
+ pullup:{name:"Strict pull-up",yt:"HRV5YKKaeVw"}, band:{name:"Banded pull-up",yt:"U03Mm8C7TrU"}, pscale:{name:"Scaling pull-ups",yt:"bZcJbM_Mzxo"}, pushup:{name:"Push-up",yt:"0pkjOk0EiAk"}, airsquat:{name:"Air squat",yt:"rMvwVtlqjTE"},
+ kbswing:{name:"Kettlebell swing",yt:"mKDIuUbH94Q"}, du:{name:"Double-under",yt:"82jNjDS19lg"}, thruster:{name:"Thruster",yt:"L219ltL15zk"},
+ clean:{name:"Power clean",yt:"KwYJTpQ_x5A"}, jerk:{name:"Push jerk",yt:"VrHNJXoSyXw"}
+};
+const WOD_MOVES={cindy:["pullup","band","pushup","airsquat"],ropepush:["pushup"],halfchelsea:["pullup","band","pushup","airsquat"],helen:["kbswing","pullup","band"],annie:["du"],tabata:["airsquat"],halfmurph:["pullup","band","pushup","airsquat"],fran:["thruster","pullup","band"],grace:["clean","jerk"]};
+function ytURL(id){ return "https://www.youtube.com/watch?v="+id }
+function moveLinks(id){ const ms=WOD_MOVES[id]||[]; return ms.length?`<div class="mvrow"><span class="small"><b>Watch form:</b></span>${ms.map(k=>`<a class="mv" href="${ytURL(MOVES[k].yt)}" target="_blank" rel="noopener">${MOVES[k].name} ▶</a>`).join("")}</div>`:"" }
+
+const WODS=[
+ {id:"cindy",name:"Cindy",fmt:"amrap",min:20,rr:30,gear:"Pull-up bar",moves:["5 strict pull-ups","10 push-ups","15 air squats"],easier:"Banded pull-ups, ring rows, or jumping pull-ups. Push-ups from your knees."},
+ {id:"engine",name:"Engine",fmt:"amrap",min:15,rr:26,gear:"Room to run",moves:["200 m run","10 burpees","15 sit-ups"],easier:"Jog or walk the run, step back instead of jumping on the burpees."},
+ {id:"ropepush",name:"Rope and Push",fmt:"amrap",min:12,rr:80,gear:"Jump rope",moves:["50 jump rope","10 push-ups","10 walking lunges per leg"],easier:"25 jump rope, push-ups from your knees."},
+ {id:"halfchelsea",name:"Half Chelsea",fmt:"emom",min:20,gear:"Pull-up bar",emom:["5 strict pull-ups, 10 push-ups, 15 air squats"],moves:["Every minute: 5 strict pull-ups, 10 push-ups, 15 air squats","Rest whatever's left of the minute"],easier:"3 banded pull-ups or ring rows, 6 push-ups, 9 air squats each minute."},
+ {id:"burpeeclock",name:"Burpee Clock",fmt:"emom",min:16,gear:"None",emom:["10 burpees","15 sit-ups"],moves:["Odd minutes: 10 burpees","Even minutes: 15 sit-ups"],easier:"6 burpees and 10 sit-ups."},
+ {id:"helen",name:"Helen",fmt:"time",gear:"Kettlebell, pull-up bar, room to run",moves:["3 rounds of:","400 m run","21 kettlebell swings (53 / 35 lb)","12 strict pull-ups"],easier:"35 / 26 lb kettlebell, banded pull-ups or ring rows."},
+ {id:"annie",name:"Annie",fmt:"time",gear:"Jump rope",moves:["50-40-30-20-10 reps of:","Double-unders (or twice as many single jumps)","Sit-ups"],easier:"Single jumps, the same number as the double-unders."},
+ {id:"tabata",name:"Tabata Mix",fmt:"tabata",gear:"None",blocks:["Burpees","Air squats"],moves:["8 rounds of 20 sec work, 10 sec rest: burpees","Then 8 more rounds: air squats","Count your reps each round. Your score is your lowest round."],easier:"Step-back burpees."},
+ {id:"repeats",name:"400 Repeats",fmt:"intervals",reps:6,rest:90,gear:"Room to run, or a rower (500 m per rep)",moves:["Run 400 m, 6 times","90 sec rest after each one","Tap Rep done as you finish each run"],easier:"4 repeats, or 300 m each."},
+ {id:"halfmurph",name:"Half Murph",fmt:"time",special:true,gear:"Pull-up bar, room to run",moves:["1 mile run","50 strict pull-ups","100 push-ups","150 air squats","1 mile run","Split up the middle part any way you like."],easier:"Banded pull-ups or ring rows, push-ups from your knees, walk/jog the miles."}
+];
+const MONTHLY={
+ fran:{id:"fran",name:"Fran",fmt:"time",monthly:true,bar:true,gear:"Barbell, pull-up bar",moves:["21-15-9 reps of:","Thrusters (95 / 65 lb)","Strict pull-ups"],easier:"65 / 45 lb thrusters, banded pull-ups or ring rows.",warn:"Thrusters are a front squat straight into an overhead press. Your legs and shoulders will be cooked, so do Fran the day before a rest day, never the day before squats."},
+ grace:{id:"grace",name:"Grace",fmt:"time",monthly:true,bar:true,gear:"Barbell, bumper plates",moves:["30 clean and jerks for time (135 / 95 lb)","Reset on the floor between reps."],easier:"A weight you can clean and jerk 10 times in a row with clean form. For newer lifters that's often 65 to 95 lb.",warn:"The clean and jerk is the most technical lift in this app. Learn it from a coach before you try Grace, and pick a weight you can move fast with good form. Do it the day before a rest day."}
+};
+function allWods(){ return [...WODS,MONTHLY.fran,MONTHLY.grace] }
+function wodById(id){ return allWods().find(w=>w.id===id) }
+function fmtLabel(w){ return w.fmt==="amrap"?`${w.min} min AMRAP`:w.fmt==="emom"?`${w.min} min EMOM`:w.fmt==="tabata"?`Tabata, ${w.blocks.length*4} min`:w.fmt==="intervals"?`${w.reps} intervals`:"For time" }
+function weekKey(d){ d=new Date(d); return dayKey(new Date(d.getFullYear(),d.getMonth(),d.getDate()-((d.getDay()+6)%7))) }
+function monthKey(d){ d=new Date(d); return d.getFullYear()+"-"+(d.getMonth()+1) }
+function monthChallenge(d){ d=new Date(d||Date.now()); return ((d.getFullYear()*12+d.getMonth())%2===0)?MONTHLY.fran:MONTHLY.grace }
+function wodsThisWeek(){ const k=weekKey(new Date()); return (S.wods||[]).filter(x=>weekKey(x.date)===k) }
+function mmss(sec){ sec=Math.max(0,Math.round(sec)); return Math.floor(sec/60)+":"+String(sec%60).padStart(2,"0") }
+function scoreText(x){ const s=x.score;
+  let t= s.type==="rounds"?`${s.rounds} rounds + ${s.reps} reps`: s.type==="time"?mmss(s.sec): s.type==="minutes"?`${s.done} of ${s.of} minutes`: s.type==="lowest"?`${s.reps} reps in lowest round`: s.type==="splits"?`${mmss(s.avg)} avg per rep`:"";
+  if(x.weight) t+=` at ${x.weight} lb`; return t+(x.level==="Scaled"?" (easier)":"") }
+function better(a,b){ const s=a.score,t=b.score; if(s.type!==t.type) return false;
+  if(s.type==="rounds") return s.rounds*1000+s.reps>t.rounds*1000+t.reps;
+  if(s.type==="time") return s.sec<t.sec; if(s.type==="splits") return s.avg<t.avg;
+  if(s.type==="minutes") return s.done>t.done; if(s.type==="lowest") return s.reps>t.reps; return false }
+function bestFor(id,list){ const xs=(list||S.wods||[]).filter(x=>x.id===id), rx=xs.filter(x=>x.level!=="Scaled"), pool=rx.length?rx:xs; return pool.reduce((b,x)=>!b||better(x,b)?x:b,null) }
+function suggestedWod(){
+  const wk=weekKey(new Date());
+  if(S.wodPick&&S.wodPick.week===wk&&wodById(S.wodPick.id)) return wodById(S.wodPick.id);
+  const last=id=>{ const xs=(S.wods||[]).filter(x=>x.id===id); return xs.length?xs[xs.length-1].date:"" };
+  const pick=WODS.filter(w=>!w.special).map((w,i)=>({w,i,l:last(w.id)})).sort((a,b)=>a.l<b.l?-1:a.l>b.l?1:a.i-b.i)[0].w;
+  S.wodPick={week:wk,id:pick.id}; save(); return pick }
+
+let wodInt=null, wodKey=null;
+function wodPhase(){
+  const r=S.wodRun, w=wodById(r.id), now=Date.now();
+  if(now<r.start) return {key:"ready",big:String(Math.ceil((r.start-now)/1000)),sub:"Get ready",task:""};
+  const e=(now-r.start)/1000;
+  if(w.fmt==="amrap"){ const left=w.min*60-e; if(left<=0) return {end:true}; return {key:"run",big:mmss(Math.ceil(left)),sub:"Time left. Keep count of your rounds.",task:"GO"} }
+  if(w.fmt==="emom"){ if(e>=w.min*60) return {end:true}; const mi=Math.floor(e/60); return {key:"m"+mi,big:String(Math.ceil(60-(e%60))),sub:`Minute ${mi+1} of ${w.min}`,task:w.emom[mi%w.emom.length]} }
+  if(w.fmt==="tabata"){ const blk=240; if(e>=w.blocks.length*blk) return {end:true}; const b=Math.floor(e/blk), wi=e%blk, rd=Math.floor(wi/30)+1, inr=wi%30, work=inr<20;
+    return {key:`t${b}-${rd}-${work}`,big:String(Math.ceil(work?20-inr:30-inr)),sub:`${w.blocks[b]} · Round ${rd} of 8`,task:work?"WORK":"REST"} }
+  if(w.fmt==="time") return {key:"run",big:mmss(Math.floor(e)),sub:"Tap Done the moment you finish.",task:"GO",canDone:true};
+  if(w.fmt==="intervals"){ const n=r.splits.length;
+    if(r.restUntil&&now<r.restUntil) return {key:"rest"+n,big:String(Math.ceil((r.restUntil-now)/1000)),sub:`Rest. Rep ${n+1} of ${w.reps} is next.`,task:"REST"};
+    return {key:"rep"+n,big:mmss(Math.floor((now-r.repStart)/1000)),sub:`Rep ${n+1} of ${w.reps}`,task:"RUN",canRep:true} }
+}
+function wodTick(){
+  if(!S.wodRun){ stopWodClock(); return }
+  if(tab!=="wod") return;
+  const p=wodPhase();
+  if(p.end){ finishClock(); return }
+  if(wodKey!==null&&p.key!==wodKey) beep();
+  wodKey=p.key;
+  const c=$("#wclock"); if(!c) return;
+  c.textContent=p.big; $("#wsub").textContent=p.sub;
+  const t=$("#wtask"); t.textContent=p.task||""; t.className="wtask"+(p.task==="REST"?" rest":p.task?" go":"");
+  const rb=$("#wRep"); if(rb) rb.hidden=!p.canRep;
+  const db=$("#wDone"); if(db) db.hidden=!p.canDone;
+}
+function startWodClock(){ clearInterval(wodInt); wodKey=null; wodTick(); wodInt=setInterval(wodTick,200) }
+function stopWodClock(){ clearInterval(wodInt); wodInt=null; wodKey=null }
+function startWod(id){ unlockAudio(); wake(); const t=Date.now()+10000; S.wodRun={id,start:t,splits:[],restUntil:0,repStart:t}; save(); confirmMode=null; renderWod(); window.scrollTo(0,0) }
+function finishClock(){
+  const r=S.wodRun; if(!r) return;
+  S.wodScore={id:r.id,auto:true,elapsed:Math.max(0,(Date.now()-r.start)/1000),splits:r.splits||[]};
+  S.wodRun=null; save(); beep(); stopWodClock(); confirmMode=null; renderWod(); window.scrollTo(0,0) }
+function repDone(){
+  const r=S.wodRun, w=wodById(r.id), now=Date.now(); if(now<r.start||(r.restUntil&&now<r.restUntil)) return;
+  r.splits.push((now-r.repStart)/1000);
+  if(r.splits.length>=w.reps){ finishClock(); return }
+  r.restUntil=now+w.rest*1000; r.repStart=r.restUntil; save(); wodTick() }
+
+function scoreFormHTML(){
+  const sc=S.wodScore, w=wodById(sc.id); let f="";
+  const n=(id,label,val,extra)=>`<div class="field"><label for="${id}">${label}</label><input id="${id}" type="number" inputmode="numeric" min="0" step="1" value="${val}" ${extra||""}></div>`;
+  if(w.fmt==="amrap") f=n("sc-r","Full rounds","")+n("sc-x","Extra reps","0");
+  if(w.fmt==="emom") f=n("sc-m","Minutes you finished in time",w.min,`max="${w.min}"`);
+  if(w.fmt==="tabata") f=n("sc-l","Reps in your lowest round","");
+  if(w.fmt==="time"||(w.fmt==="intervals"&&!sc.splits.length)){
+    const sec=w.fmt==="time"&&sc.auto?Math.round(sc.elapsed):null;
+    f=`<div class="field"><label>${w.fmt==="time"?"Your time":"Average time per rep"}</label><span class="tin"><input id="sc-mm" aria-label="Minutes" type="number" inputmode="numeric" min="0" step="1" placeholder="min" value="${sec===null?"":Math.floor(sec/60)}"><b>:</b><input id="sc-ss" aria-label="Seconds" type="number" inputmode="numeric" min="0" max="59" step="1" placeholder="sec" value="${sec===null?"":String(sec%60).padStart(2,"0")}"></span></div>` }
+  if(w.fmt==="intervals"&&sc.splits.length){ const avg=sc.splits.reduce((a,b)=>a+b,0)/sc.splits.length;
+    f=`<p class="small" style="margin:0">${sc.splits.map((s,i)=>`Rep ${i+1}: ${mmss(s)}`).join(" · ")}</p><p style="margin:8px 0 4px"><b>${mmss(avg)}</b> average per rep</p>` }
+  if(w.bar) f+=`<div class="field"><label for="sc-w">Bar weight (lb)</label><input id="sc-w" type="number" inputmode="decimal" min="45" step="5" placeholder="95"></div>`;
+  f+=`<div class="lvl" role="radiogroup" aria-label="Which version"><label><input type="radio" name="lvl" value="Rx" checked> As written</label><label><input type="radio" name="lvl" value="Scaled"> Easier version</label></div>`;
+  const intro=sc.auto&&w.fmt==="amrap"?"Time's up. How many full rounds did you get?":sc.auto&&w.fmt==="emom"?"Count only the minutes where you finished the work before the beep.":sc.auto?"Nice work. Check your score and save it.":"Log a score from a WOD you did with your own timer.";
+  return `<section class="panel review"><h2>Log your ${esc(w.name)}</h2><p class="small" style="margin:-4px 0 8px">${intro}</p>${f}
+    <p class="err" id="scErr" hidden></p>
+    <div class="row"><button class="btn ghost" id="scToss">Don't log it</button><button class="btn" id="scSave">Save</button></div></section>` }
+function saveScore(){
+  const sc=S.wodScore, w=wodById(sc.id), num=id=>{ const el=$("#"+id); return el&&el.value!==""?parseFloat(el.value):NaN };
+  const err=m=>{ const e=$("#scErr"); e.textContent=m; e.hidden=false };
+  let score;
+  if(w.fmt==="amrap"){ const r=num("sc-r"), x=num("sc-x"); if(!(r>=0)) return err("Enter how many full rounds you finished."); score={type:"rounds",rounds:Math.floor(r),reps:x>0?Math.floor(x):0} }
+  if(w.fmt==="emom"){ const m=num("sc-m"); if(!(m>=0&&m<=w.min)) return err(`Enter a number from 0 to ${w.min}.`); score={type:"minutes",done:Math.floor(m),of:w.min} }
+  if(w.fmt==="tabata"){ const l=num("sc-l"); if(!(l>=0)) return err("Enter the reps from your lowest round."); score={type:"lowest",reps:Math.floor(l)} }
+  if(w.fmt==="time"||(w.fmt==="intervals"&&!sc.splits.length)){ const mm=num("sc-mm"), ss=num("sc-ss"), t=(mm>0?mm:0)*60+(ss>0?ss:0);
+    if(!(t>0)||ss>59) return err("Enter your time in minutes and seconds.");
+    score=w.fmt==="time"?{type:"time",sec:Math.round(t)}:{type:"splits",avg:Math.round(t),splits:[]} }
+  if(w.fmt==="intervals"&&sc.splits.length){ const avg=sc.splits.reduce((a,b)=>a+b,0)/sc.splits.length; score={type:"splits",avg:Math.round(avg),splits:sc.splits.map(Math.round)} }
+  const entry={date:new Date().toISOString(),id:w.id,level:(document.querySelector('input[name="lvl"]:checked')||{}).value||"Rx",score};
+  if(w.bar){ const wt=num("sc-w"); if(!(wt>=45)) return err("Enter the bar weight you used."); entry.weight=wt }
+  const prev=bestFor(w.id);
+  S.wods=S.wods||[]; S.wods.push(entry); S.wodScore=null; save();
+  toast(prev&&entry.level===prev.level&&better(entry,prev)?"New best for "+w.name:"WOD saved"); renderWod(); window.scrollTo(0,0) }
+
+function wodCard(w,label){
+  const b=bestFor(w.id);
+  return `<section class="panel wod${w.monthly?" monthly":""}"><div class="label">${label}</div>
+    <h2>${w.name}<span class="fmt">${fmtLabel(w)}</span></h2>
+    <ul class="moves">${w.moves.map(m=>`<li>${m}</li>`).join("")}</ul>
+    ${moveLinks(w.id)}
+    <p class="small" style="margin:0"><b>Easier version:</b> ${w.easier}</p>
+    <p class="small" style="margin:4px 0 0"><b>Gear:</b> ${w.gear}${b?` · <b>Your best:</b> ${scoreText(b)}`:""}</p>
+    ${w.warn?`<div class="warn">${w.warn}</div>`:""}
+    <div class="row" style="margin-top:12px"><button class="btn ghost" data-log="${w.id}" style="margin:0">Log a score</button><button class="btn" data-start="${w.id}" style="margin:0">Start</button></div>
+    ${w.monthly?"":`<button class="linkbtn" id="wodShuffle" style="margin:10px 0 0">Suggest a different one</button>`}
+  </section>` }
+function renderWod(){
+  stopWodClock();
+  if(S.wodRun){
+    const w=wodById(S.wodRun.id);
+    view.innerHTML=`<section class="panel wodclock"><div class="label">${w.name} · ${fmtLabel(w)}</div>
+      <div class="wtask" id="wtask"></div><div class="wbig" id="wclock" aria-live="off">--</div><div class="wsub" id="wsub"></div>
+      ${w.fmt==="time"?`<button class="btn big" id="wDone" hidden>Done</button>`:""}${w.fmt==="intervals"?`<button class="btn big" id="wRep" hidden>Rep done</button>`:""}
+      <ul class="moves">${w.moves.map(m=>`<li>${m}</li>`).join("")}</ul>
+      ${confirmMode==="wend"?`<div class="confirm"><b>End this WOD now?</b><p class="small" style="margin:6px 0 10px">You'll go to the score screen with what you've done so far.</p><div class="row"><button class="btn ghost" id="wKeep">Keep going</button><button class="btn danger" id="wEndNow">End now</button></div></div>`:`<button class="btn ghost" id="wEnd">End early</button>`}
+      <p class="small" style="margin:12px 0 0">Keep this screen open. If your phone locks, the clock keeps counting and catches up when you come back.</p></section>`;
+    startWodClock(); return }
+  if(S.wodScore){ view.innerHTML=scoreFormHTML(); return }
+  const lifted=S.history.length&&dayKey(S.history[0].date)===dayKey(new Date());
+  const done=wodsThisWeek(), capped=done.length>=1;
+  const ch=monthChallenge(), chDone=(S.wods||[]).find(x=>x.id===ch.id&&monthKey(x.date)===monthKey(new Date()));
+  const monthName=new Date().toLocaleDateString(undefined,{month:"long"}), nextName=ch.id==="fran"?"Grace":"Fran";
+  let h=`<div class="dayhead"><div><div class="label">Conditioning</div><div class="daytype">WOD</div></div><div class="small" style="text-align:right">Optional<br>${done.length} of 1 this week</div></div>
+    <p class="small" style="margin:0 0 12px">For your days off from lifting. Every WOD has an easier version, and you can skip them anytime, especially during a sports season.</p>`;
+  if(capped){ const x=done[0];
+    h+=`<section class="panel"><h2>This week's WOD is done</h2><p style="margin:0"><b>${esc(wodById(x.id).name)}</b>: ${scoreText(x)}</p><p class="small" style="margin:8px 0 0">Your next one unlocks Monday. Recover and hit your lifts.</p></section>`;
+    if(!chDone) h+=`<p class="small">Your ${monthName} challenge, ${ch.name}, is still open. You can do it any week this month.</p>`;
+  }else{
+    if(lifted) h+=`<div class="note">You already lifted today. WODs are meant for your off days, so save this for tomorrow if you can.</div>`;
+    h+=wodCard(suggestedWod(),"This week's WOD");
+    if(!chDone) h+=wodCard(ch,`${monthName} challenge · counts as this week's WOD`);
+  }
+  if(chDone) h+=`<p class="small">${monthName} challenge done: ${ch.name}, ${scoreText(chDone)}. Next month is ${nextName}.</p>`;
+  h+=`<details class="panel wodlist"><summary>All WODs</summary>${WODS.map(w=>{ const b=bestFor(w.id);
+      return `<div class="wrow"><div><b>${w.name}</b> <span class="small">${fmtLabel(w)}</span><div class="small">${b?"Best: "+scoreText(b):"Not done yet"}</div></div>${capped?"":`<button class="chip" data-pick="${w.id}">Do this one</button>`}</div>` }).join("")}
+    <div class="label" style="margin:16px 0 2px">Monthly challenges</div>
+    <p class="small" style="margin:0 0 4px">One a month, taking turns. You can't pick these on other weeks.</p>
+    ${[MONTHLY.fran,MONTHLY.grace].map(w=>{ const b=bestFor(w.id), now=ch.id===w.id;
+      const nx=new Date(); nx.setDate(1); nx.setMonth(nx.getMonth()+1); const nextName=nx.toLocaleDateString(undefined,{month:"long"});
+      return `<div class="wrow"><div><b>${w.name}</b> <span class="small">${fmtLabel(w)}</span><div class="small">${w.id==="fran"?"21-15-9 thrusters and strict pull-ups":"30 clean and jerks"}</div><span></span><div class="small">${b?"Best: "+scoreText(b):"Not done yet"}</div></div><span class="mtag${now?" on":""}">${now?(chDone?"Done this month":"This month"):"Next: "+nextName}</span></div>` }).join("")}</details>`;
+  h+=`<section class="panel"><h2>Movement videos</h2><p class="small" style="margin:-4px 0 6px">Short demos, mostly from CrossFit. All pull-ups in Five Deep are strict: dead hang, chin over the bar, no swinging. Not there yet? Loop a resistance band over the bar and under your foot or knee. Use a lighter band as you get stronger. Learn the clean and jerk from a coach.</p>
+    ${Object.keys(MOVES).map(k=>`<a class="vrow" href="${ytURL(MOVES[k].yt)}" target="_blank" rel="noopener"><span>${MOVES[k].name}</span><span class="vid">Watch ▶</span></a>`).join("")}</section>`;
+  const log=(S.wods||[]).slice(-5).reverse();
+  if(log.length) h+=`<section class="panel"><h2>Recent WODs</h2>${log.map(x=>`<div class="hl"><span>${fmtD(x.date)} · ${esc(wodById(x.id).name)}</span><span>${scoreText(x)}</span></div>`).join("")}</section>`;
+  view.innerHTML=h }
+view.addEventListener("click",e=>{
+  if(tab!=="wod") return;
+  const st=e.target.closest("[data-start]"); if(st){ if(wodsThisWeek().length<1) startWod(st.dataset.start); return }
+  const lg=e.target.closest("[data-log]"); if(lg){ if(wodsThisWeek().length<1){ S.wodScore={id:lg.dataset.log,auto:false,splits:[]}; save(); renderWod(); window.scrollTo(0,0) } return }
+  const pk=e.target.closest("[data-pick]"); if(pk){ S.wodPick={week:weekKey(new Date()),id:pk.dataset.pick}; save(); renderWod(); window.scrollTo(0,0); return }
+  const id=e.target.id;
+  if(id==="wodShuffle"){ const cur=suggestedWod().id, pool=WODS.filter(w=>!w.special&&w.id!==cur); S.wodPick={week:weekKey(new Date()),id:pool[Math.floor(Math.random()*pool.length)].id}; save(); renderWod() }
+  if(id==="wDone") finishClock();
+  if(id==="wRep") repDone();
+  if(id==="wEnd"){ confirmMode="wend"; renderWod() }
+  if(id==="wKeep"){ confirmMode=null; renderWod() }
+  if(id==="wEndNow"){ confirmMode=null; finishClock() }
+  if(id==="scSave") saveScore();
+  if(id==="scToss"){ S.wodScore=null; save(); renderWod(); window.scrollTo(0,0) }
+});
+view.addEventListener("input",e=>{ if(tab==="wod"){ const er=$("#scErr"); if(er) er.hidden=true } });
+
+/* ---------- HOW TO USE ---------- */
+let helpBack="today";
+const GUIDE=[
+ ["Set up","Go to Settings and enter your name and starting weights. Start light."],
+ ["Lift","Tap each set as you finish it. The app picks your next weights."],
+ ["WODs","Optional, one a week, on your days off from lifting."]
+];
+function renderHelp(){
+  if(!S.guideSeen){ S.guideSeen=true; save() }
+  view.innerHTML=`<section class="panel guide"><div class="label">How to use</div><h2>Five Deep in 30 seconds</h2>
+    <ol>${GUIDE.map(([t,b])=>`<li><h3>${t}</h3><p>${b}</p></li>`).join("")}</ol>
+    <button class="btn" id="helpDone">Got it</button>
+    <p class="small" style="margin:10px 0 0;text-align:center">The app explains the rest as you go. Tap the ? next to the logo anytime to see this again.</p></section>`;
+}
+document.addEventListener("click",e=>{
+  const id=e.target.id;
+  if((id==="helpBtn"||id==="openHelp")&&S.ack){ if(tab!=="help") helpBack=tab; tab="help"; confirmMode=null; render(); window.scrollTo(0,0) }
+  if(id==="helpDone"){ tab=helpBack||"today"; render(); window.scrollTo(0,0) }
+});
+
+/* ---------- ROUTING / EVENTS ---------- */
+function renderHeader(){ $("#who").textContent=S.name?S.name:"" }
+function render(){
+  if(!S.ack){ renderTerms(); return }
+  document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-selected",b.dataset.view===tab));
+  $("#helpBtn").hidden=false;
+  if(tab==="help") renderHelp(); else if(tab==="today") renderToday(); else if(tab==="wod") renderWod(); else if(tab==="progress") renderProgress(); else if(tab==="history") renderHistory(); else renderSettings();
+}
+document.querySelector("nav").onclick=e=>{ const b=e.target.closest("button"); if(!b) return; tab=b.dataset.view; confirmMode=null; pick=null; render(); window.scrollTo(0,0) };
+view.addEventListener("click",e=>{
+  if(tab!=="today") return;
+  const set=e.target.closest(".set");
+  if(set){
+    const li=+set.dataset.l, j=+set.dataset.s, L=S.current.lifts[li];
+    if(L.sets[j]===null){ L.sets[j]=5; pick=null; save(); renderToday(); startTimer(S.settings.restOk,"Good set. Rest.") }
+    else { pick=(pick&&pick.l===li&&pick.j===j)?null:{l:li,j}; renderToday() }
+    return;
+  }
+  const rp=e.target.closest("[data-reps]");
+  if(rp&&pick){ const L=S.current.lifts[pick.l], v=rp.dataset.reps, st=S.settings;
+    if(v==="clear"){ L.sets[pick.j]=null; pick=null; save(); renderToday(); stopTimer() }
+    else { const n=+v; L.sets[pick.j]=n; pick=null; save(); renderToday(); n===5?startTimer(st.restOk,"Good set. Rest."):startTimer(st.restFail,"Missed reps. Take a longer rest.") }
+    return }
+  if(e.target.id==="bkLater"){ S.backupSnooze=new Date(Date.now()+3*864e5).toISOString(); save(); renderToday(); return }
+  if(e.target.id==="bkCopy"){ copyBackup(true); return }
+  const adj=e.target.closest("[data-adj]");
+  if(adj){ const L=S.current.lifts[+adj.dataset.adj]; L.w=Math.max(S.settings.bar,L.w+parseFloat(adj.dataset.d)); save(); renderToday(); return }
+  if(e.target.id==="finish"){ const all=S.current.lifts.every(L=>L.sets.every(r=>r!==null)); if(all) finishWorkout(); else { confirmMode="finish"; renderToday() } }
+  if(e.target.id==="forceFinish") finishWorkout();
+  if(e.target.id==="cancelFinish"){ confirmMode=null; renderToday() }
+  if(e.target.id==="discardBtn"){ confirmMode="discard"; renderToday() }
+  if(e.target.id==="cancelDiscard"){ confirmMode=null; renderToday() }
+  if(e.target.id==="doDiscard"){ S.current=null; confirmMode=null; save(); stopTimer(); toast("Workout discarded"); renderToday(); window.scrollTo(0,0) }
+  if(e.target.id==="breakKeep"){ S.breakAck=S.history[0].date; save(); renderToday() }
+  if(e.target.id==="breakDrop"){
+    Object.keys(LIFTS).forEach(k=>{ S.lifts[k].w=round5(S.lifts[k].w*0.9); S.lifts[k].fails=0 });
+    if(S.current) S.current.lifts.forEach(L=>L.w=S.lifts[L.key].w);
+    S.breakAck=S.history[0].date; save(); toast("Weights dropped 10%"); renderToday() }
+});
+
+if(S.wodRun||S.wodScore) tab="wod";
+renderHeader(); render();
+if("serviceWorker" in navigator && window.isSecureContext && !/claude/.test(location.hostname)){
+  try{ navigator.serviceWorker.register("sw.js").catch(()=>{}) }catch(e){}
+}
+})();
+</script>
+
+</body>
+</html>
