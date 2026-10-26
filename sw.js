@@ -1,6 +1,6 @@
 // Caches the app so it opens in the gym with no signal.
 // Bump VERSION whenever you change index.html so phones pick up the update.
-const VERSION = "five-deep-v25";
+const VERSION = "five-deep-v26";
 const FILES = ["./", "index.html", "manifest.json", "icon-192.png", "icon-512.png", "apple-touch-icon.png"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
