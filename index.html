@@ -169,6 +169,7 @@ textarea{width:100%;min-height:110px;font:13px ui-monospace,Menlo,monospace;bord
 .fbtn.moderate.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
 .fbtn.difficult.on{background:var(--miss);border-color:var(--miss);color:var(--on-miss)}
 .feelt.easy{color:var(--good);font-weight:600}.feelt.difficult{color:var(--miss);font-weight:600}.feelt.moderate{font-weight:600}
+.eqtoday{margin:0 0 14px}
 .eqsw{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--soft);border-radius:12px;padding:4px}
 .eqb{font:700 16px var(--body);border:0;background:transparent;color:var(--muted);padding:11px 0;border-radius:9px;cursor:pointer}
 .eqb.on{background:var(--accent);color:var(--accent-ink)}
@@ -292,6 +293,7 @@ function renderToday(){
   const c=S.current;
   let h=`<div class="dayhead"><div><div class="label">Workout</div><div class="daytype">Day <span>${c.type}</span></div></div>
     <div class="small" style="text-align:right">Next up: Day ${c.type==="A"?"B":"A"}<br>${S.history.length} session${S.history.length===1?"":"s"} logged</div></div>`;
+  h+=`<div class="eqtoday">${eqSwitchHTML()}${isDB()?`<p class="small" style="margin:6px 0 0">Dumbbell versions of each lift. Weights are per dumbbell.</p>`:""}</div>`;
   if(S.history.length<3) h+=`<p class="small" style="margin:0 0 12px">Tap a circle when you finish a set of 5. Got fewer? Tap it again. Use − and + to change today's weight.</p>`;
   if(backupDue()&&!c.lifts.some(L=>L.sets.some(r=>r!==null))){
     const d=S.lastBackup?Math.floor((Date.now()-new Date(S.lastBackup))/864e5):null;
@@ -348,6 +350,15 @@ function copyBackup(fromBanner){
   const done=()=>{ S.lastBackup=new Date().toISOString(); save(); toast("Backup copied. Paste it into Notes."); if(tab==="today") renderToday() };
   const fail=()=>{ if(fromBanner){ tab="settings"; render(); window.scrollTo(0,document.body.scrollHeight) } const ta=$("#backupText"); if(ta){ ta.value=t; ta.focus(); ta.select() } toast("Text selected. Copy it, then paste it into Notes.") };
   try{ if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(done,fail); else fail() }catch(e){ fail() } }
+function eqSwitchHTML(){
+  return `<div class="eqsw" role="radiogroup" aria-label="Equipment">${["barbell","dumbbell"].map(x=>`<button type="button" class="eqb${eq()===x?" on":""}" data-equip="${x}" role="radio" aria-checked="${eq()===x}">${x==="barbell"?"Barbell":"Dumbbells"}</button>`).join("")}</div>` }
+function switchEquip(to){
+  if(to===eq()) return;
+  if(S.current&&S.current.lifts.some(L=>L.sets.some(r=>r!==null))){ toast("Finish or discard today's workout first."); return }
+  S.liftsBy=S.liftsBy||{}; S.liftsBy[eq()]=S.lifts;
+  S.equip=to; S.lifts=S.liftsBy[to]||JSON.parse(JSON.stringify(to==="dumbbell"?DB_START:BB_START));
+  S.current=null; S.review=null; pick=null; confirmMode=null; save(); stopTimer(); render();
+  toast(to==="dumbbell"?"Switched to dumbbells":"Switched to barbell") }
 function finishWorkout(){
   const c=S.current, st=S.settings, results=[];
   c.lifts.forEach(L=>{
@@ -623,11 +634,9 @@ function renderSettings(){
   <form id="setForm">
   <fieldset><legend>Lifter</legend><div class="field"><label for="f-name">Name</label><input id="f-name" type="text" value="${esc(S.name)}" placeholder="Your name"></div>
     <div class="field"><label for="f-bw">Bodyweight (lb)<br><span class="small">Optional</span></label><input id="f-bw" type="number" inputmode="decimal" step="0.1" placeholder="165.0" value="${(S.bw&&S.bw.length)?S.bw.slice().sort((a,b)=>a.date<b.date?-1:1).pop().w:""}"></div></fieldset>
-  <fieldset><legend>Equipment</legend>
-    <div class="eqsw" role="radiogroup" aria-label="Equipment">${["barbell","dumbbell"].map(x=>`<button type="button" class="eqb${eq()===x?" on":""}" data-equip="${x}" role="radio" aria-checked="${eq()===x}">${x==="barbell"?"Barbell":"Dumbbells"}</button>`).join("")}</div>
-    <p class="small" style="margin:8px 0 0">${isDB()?"Dumbbell versions of all five lifts, good for beginners or training at home. Weights are per dumbbell. Switch back anytime, and each keeps its own weights and history.":"New to lifting or no barbell? Switch to dumbbell versions of all five lifts. Each keeps its own weights and history."}</p></fieldset>
   <fieldset><legend>Next working weights (${isDB()?"lb per dumbbell":"lb"})</legend>
     ${Object.keys(LIFTS).map(k=>num("w-"+k,S.lifts[k].w,LN(k),1)).join("")}
+    <p class="small" style="margin:4px 0 0">These are your ${isDB()?"dumbbell":"barbell"} weights. Switch between barbell and dumbbells at the top of the Today tab.</p>
     <p class="small">Start lighter than you think. The program adds weight every session, so easy early weeks are the point.</p>
   </fieldset>
   <fieldset><legend>Progression</legend>
@@ -696,12 +705,6 @@ function renderSettings(){
     const t=$("#eraseTxt"); if(t.value.trim().toUpperCase()!=="ERASE"){ $("#eraseErr").hidden=false; t.focus(); return }
     S=fresh(); confirmMode=null; save(); stopTimer(); renderHeader(); toast("All data erased"); renderSettings() };
   const et=$("#eraseTxt"); if(et){ et.oninput=()=>{ $("#eraseErr").hidden=true }; et.scrollIntoView({block:"center"}) }
-  document.querySelectorAll("[data-equip]").forEach(b=>b.onclick=()=>{
-    const to=b.dataset.equip; if(to===eq()) return;
-    if(S.current&&S.current.lifts.some(L=>L.sets.some(r=>r!==null))){ toast("Finish or discard today's workout first."); return }
-    S.liftsBy=S.liftsBy||{}; S.liftsBy[eq()]=S.lifts;
-    S.equip=to; S.lifts=S.liftsBy[to]||JSON.parse(JSON.stringify(to==="dumbbell"?DB_START:BB_START));
-    S.current=null; S.review=null; save(); renderSettings(); toast(to==="dumbbell"?"Switched to dumbbells":"Switched to barbell") });
   const eb=$("#eraseBackup"); if(eb) eb.onclick=()=>{ $("#backupText").value=JSON.stringify(S); copyBackup(false); setTimeout(()=>{ if(confirmMode==="reset") renderSettings() },300) };
 }
 function restore(txt){
@@ -986,6 +989,7 @@ view.addEventListener("click",e=>{
     return }
   if(e.target.id==="bkLater"){ S.backupSnooze=new Date(Date.now()+3*864e5).toISOString(); save(); renderToday(); return }
   if(e.target.id==="bkCopy"){ copyBackup(true); return }
+  const eqb=e.target.closest("[data-equip]"); if(eqb){ switchEquip(eqb.dataset.equip); return }
   const adj=e.target.closest("[data-adj]");
   if(adj){ const L=S.current.lifts[+adj.dataset.adj]; L.w=Math.max(floorW(),L.w+parseFloat(adj.dataset.d)); save(); renderToday(); return }
   const fe=e.target.closest("[data-feel]");
