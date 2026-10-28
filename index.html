@@ -173,6 +173,14 @@ textarea{width:100%;min-height:110px;font:13px ui-monospace,Menlo,monospace;bord
 .eqsw{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--soft);border-radius:12px;padding:4px}
 .eqb{font:700 16px var(--body);border:0;background:transparent;color:var(--muted);padding:11px 0;border-radius:9px;cursor:pointer}
 .eqb.on{background:var(--accent);color:var(--accent-ink)}
+.last{font-size:14px;color:var(--ink);margin:6px 0 0}
+.ver{text-align:center;font-size:13px;color:var(--muted);margin:18px 0 0}
+.ver .linkbtn{margin:0;font-size:13px}
+.modal{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.mbox{background:var(--surface);color:var(--ink);border-radius:16px;padding:18px;max-width:480px;width:100%;max-height:100%;overflow:auto;border:1px solid var(--line)}
+.mbox h2{font:700 26px var(--display);text-transform:uppercase;margin:2px 0 10px}
+.wn ul{margin:6px 0 14px;padding-left:20px;line-height:1.45}
+.wn li{margin:4px 0}
 .sample{border:1px dashed var(--silver);border-radius:12px;padding:10px 14px;font-size:14px;margin-bottom:14px;color:var(--ink)}
 .tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}
 .tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
@@ -233,6 +241,21 @@ textarea{width:100%;min-height:110px;font:13px ui-monospace,Menlo,monospace;bord
 <script>
 (function(){
 const APP_NAME="Five Deep";
+const APP_VERSION="1.3", APP_DATE="2026-10-28T12:00:00";
+const CHANGELOG=[
+ {v:"1.3",d:"2026-10-28T12:00:00",items:[
+  "Rest timer now grows with the weight: 1:30 under 135 lb, up to 4:00 at 315 lb and over, plus a minute after a missed set.",
+  "Each lift shows what you did last time, so you know where you're starting.",
+  "New Barbell / Dumbbells switch at the top of Today, with dumbbell versions and videos for all five lifts.",
+  "Rate each lift Easy, Moderate, or Difficult. The Next session card uses it to suggest what to do next.",
+  "The − and + buttons now move 5 lb per tap.",
+  "Bolder outlines on the set circles so they're easier to see."]},
+ {v:"1.2",d:"2026-10-26T12:00:00",items:[
+  "Install steps show up when the app is opened in a browser.",
+  "Share Five Deep with a QR code from the top of Settings.",
+  "Erasing all data now requires typing ERASE."]},
+ {v:"1.0",d:"2026-10-26T09:00:00",items:["First release."]}
+];
 const KEY="fivedeep.v1";
 const LIFTS={squat:"Squat",bench:"Bench Press",row:"Barbell Row",ohp:"Overhead Press",dead:"Deadlift"};
 const PLAN={A:["squat","bench","row"],B:["squat","ohp","dead"]};
@@ -256,7 +279,7 @@ function cap(x){ return x.charAt(0).toUpperCase()+x.slice(1) }
 function fresh(){
   return {
     name:"", setupDone:false,
-    settings:{inc:5,incDead:5,deloadPct:10,restOk:90,restFail:180,bar:45},
+    settings:{inc:5,incDead:5,deloadPct:10,restOk:90,restFail:180,bar:45,restAuto:true},
     lifts:JSON.parse(JSON.stringify(BB_START)), equip:"barbell",
     next:"A", history:[], current:null
   };
@@ -316,7 +339,8 @@ function renderToday(){
     h+=`<section class="lift">
       <div class="lifttop"><div><div class="liftname">${LN(L.key)}</div><div class="scheme">${SETS[L.key]}×5</div><div><a class="vid" href="https://www.youtube.com/watch?v=${VID(L.key)}" target="_blank" rel="noopener">Watch form ▶</a></div></div>
       <div class="wt"><button class="step" data-adj="${i}" data-d="-5" aria-label="Lower weight 5 lb">−</button><output>${L.w}</output><small>lb</small><button class="step" data-adj="${i}" data-d="5" aria-label="Raise weight 5 lb">+</button></div></div>
-      <div class="plates">${isDB()?(L.key==="squat"?"One dumbbell, held at your chest":"Per dumbbell, one in each hand"):platesFor(L.w)}${f?` · <span class="fails">Missed last ${f} time${f>1?"s":""}</span>`:""}</div>
+      ${(()=>{ const lt=lastTime(L.key); return lt?`<div class="last">Last time: <b>${lt.w} lb</b> · ${lt.sets.join("/")}${lt.feel?` · ${cap(lt.feel)}`:""}</div>`:"" })()}
+      <div class="plates">${isDB()?(L.key==="squat"?"One dumbbell, held at your chest":"Per dumbbell, one in each hand"):platesFor(L.w)} · Rest ${mmss(restFor(L,true))}${f?` · <span class="fails">Missed last ${f} time${f>1?"s":""}</span>`:""}</div>
       <div class="sets">${L.sets.map((r,j)=>`<button class="set ${r===null?"":r===5?"done":"miss"}${pick&&pick.l===i&&pick.j===j?" picking":""}" data-l="${i}" data-s="${j}" aria-label="Set ${j+1}: ${r===null?"not done":r+" reps"}">${r===null?"":r}</button>`).join("")}</div>
       ${pick&&pick.l===i?`<div class="repick" role="group" aria-label="Reps for set ${pick.j+1}"><div class="rphead"><span class="small">Set ${pick.j+1}: how many reps did you get?</span><button class="linkbtn" data-reps="clear">Clear</button></div>
         <div class="rp">${[1,2,3,4,5].map(n=>`<button class="rpb${L.sets[pick.j]===n?" on":""}" data-reps="${n}">${n}</button>`).join("")}</div></div>`:""}
@@ -338,6 +362,7 @@ function renderToday(){
   }
   h+=`<div class="panel" style="margin-top:20px"><h2>Form videos</h2><p class="small" style="margin:-4px 0 6px">All five lifts. Day A is squat, bench, and row. Day B is squat, overhead press, and deadlift.</p>
     ${Object.keys(LIFTS).map(k=>`<a class="vrow" href="https://www.youtube.com/watch?v=${VID(k)}" target="_blank" rel="noopener"><span>${LN(k)}</span><span class="vid">Watch ▶</span></a>`).join("")}</div>`;
+  h+=`<p class="ver">Five Deep version ${APP_VERSION} · Updated ${fmtLong(APP_DATE)} · <button class="linkbtn" id="wnOpen">What's new</button></p>`;
   view.innerHTML=h;
 }
 
@@ -359,6 +384,33 @@ function switchEquip(to){
   S.equip=to; S.lifts=S.liftsBy[to]||JSON.parse(JSON.stringify(to==="dumbbell"?DB_START:BB_START));
   S.current=null; S.review=null; pick=null; confirmMode=null; save(); stopTimer(); render();
   toast(to==="dumbbell"?"Switched to dumbbells":"Switched to barbell") }
+function fmtLong(d){ return new Date(d).toLocaleDateString(undefined,{month:"long",day:"numeric",year:"numeric"}) }
+function showWhatsNew(all){
+  const notes=all?CHANGELOG:CHANGELOG.filter(c=>!S.seenVersion||verGt(c.v,S.seenVersion));
+  const box=document.createElement("div"); box.className="modal"; box.id="whatsNew";
+  box.innerHTML=`<div class="mbox" role="dialog" aria-modal="true" aria-labelledby="wnTitle"><div class="label">Five Deep ${APP_VERSION}</div><h2 id="wnTitle">What's new</h2>
+    ${notes.map(c=>`<div class="wn"><div class="small"><b>Version ${c.v}</b> · ${fmtLong(c.d)}</div><ul>${c.items.map(i=>`<li>${i}</li>`).join("")}</ul></div>`).join("")}
+    <button class="btn" id="wnDone">Got it</button></div>`;
+  document.body.appendChild(box);
+  $("#wnDone").focus() }
+function verGt(a,b){ const x=a.split(".").map(Number), y=String(b).split(".").map(Number); for(let i=0;i<Math.max(x.length,y.length);i++){ if((x[i]||0)!==(y[i]||0)) return (x[i]||0)>(y[i]||0) } return false }
+function maybeWhatsNew(){
+  if(!S.ack||S.wodRun||$("#whatsNew")) return;
+  if(S.seenVersion===APP_VERSION) return;
+  showWhatsNew(false) }
+
+/* ---------- REST BY WEIGHT ---------- */
+function restTier(L){
+  const w=isDB()?(L.key==="squat"?L.w:L.w*2):L.w;
+  return w<135?90:w<225?120:w<315?180:240 }
+function restFor(L,full){
+  const st=S.settings;
+  if(st.restAuto===false) return full?st.restOk:st.restFail;
+  const t=restTier(L); return full?t:Math.min(300,Math.max(t+60,180)) }
+function restMsg(L,full){ return full?(restTier(L)>=180&&S.settings.restAuto!==false?"Heavy set. Take your full rest.":"Good set. Rest."):"Missed reps. Take a longer rest." }
+function lastTime(key){
+  for(const h of S.history){ if((h.equip||"barbell")!==eq()) continue; const l=h.lifts.find(x=>x.key===key); if(l) return l }
+  return null }
 function finishWorkout(){
   const c=S.current, st=S.settings, results=[];
   c.lifts.forEach(L=>{
@@ -446,7 +498,7 @@ function renderTerms(){
   const clear=()=>{$("#terr").hidden=true}; $("#t1").onchange=clear; $("#t2").onchange=clear;
   $("#tok").onclick=()=>{
     if(!$("#t1").checked||!$("#t2").checked){ $("#terr").hidden=false; return }
-    S.ack=new Date().toISOString(); save(); document.querySelector("nav").hidden=false; helpBack="today"; tab=S.guideSeen?"today":"help"; render(); window.scrollTo(0,0);
+    S.ack=new Date().toISOString(); S.seenVersion=APP_VERSION; save(); document.querySelector("nav").hidden=false; helpBack="today"; tab=S.guideSeen?"today":"help"; render(); window.scrollTo(0,0);
   };
 }
 
@@ -645,9 +697,12 @@ function renderSettings(){
     ${num("s-deload",st.deloadPct,"Deload after 3 misses (%)",1)}
     ${num("s-bar",st.bar,"Empty bar weight",5)}
   </fieldset>
-  <fieldset><legend>Rest timer (seconds)</legend>
-    ${num("s-restOk",st.restOk,"After a full set",15)}
-    ${num("s-restFail",st.restFail,"After a missed set",15)}
+  <fieldset><legend>Rest timer</legend>
+    <label class="chk" style="border-top:0;padding-top:0"><input type="checkbox" id="s-restAuto" ${st.restAuto!==false?"checked":""}> Set rest by the weight on the bar (recommended)</label>
+    <p class="small" style="margin:0 0 6px">Under 135 lb: 1:30. 135 to 220: 2:00. 225 to 310: 3:00. 315 and up: 4:00. After a missed set, add a minute (3:00 to 5:00). Dumbbells count as the pair.</p>
+    ${num("s-restOk",st.restOk,"Fixed rest after a full set (sec)",15)}
+    ${num("s-restFail",st.restFail,"Fixed rest after a missed set (sec)",15)}
+    <p class="small" style="margin:0">The fixed times are used only when the box above is unchecked.</p>
   </fieldset>
   <button class="btn" type="submit">Save settings</button>
   </form>
@@ -659,7 +714,7 @@ function renderSettings(){
     <label class="small" for="fileIn" style="display:block;margin-top:10px">Or restore from a backup file:</label>
     <input id="fileIn" type="file" accept="application/json,.json">
   </fieldset>
-  <fieldset><legend>Help</legend><button class="btn ghost" id="openHelp" style="margin:0">How to use Five Deep</button></fieldset>
+  <fieldset><legend>Help</legend><button class="btn ghost" id="openHelp" style="margin:0">How to use Five Deep</button><button class="btn ghost" id="wnOpen2" style="margin:8px 0 0">What's new in version ${APP_VERSION}</button></fieldset>
   <fieldset><legend>Safety and terms</legend><div class="terms">${TERMS}</div>
     <p class="small" style="margin:0">${S.ack?"Accepted on "+new Date(S.ack).toLocaleDateString(undefined,{month:"long",day:"numeric",year:"numeric"})+".":""}</p></fieldset>
   <fieldset><legend>Reset</legend>`;
@@ -683,6 +738,7 @@ function renderSettings(){
     if(bwv>=50&&bwv<=500&&(!bwl||Math.abs(bwl.w-bwv)>0.01)){ const k=dayKey(new Date()); S.bw=(S.bw||[]).filter(x=>dayKey(x.date)!==k); S.bw.push({date:new Date().toISOString(),w:Math.round(bwv*10)/10}) }
     const changed=[];
     Object.keys(LIFTS).forEach(k=>{ const w=v("w-"+k); if(w>0&&w!==S.lifts[k].w){ S.lifts[k].w=w; S.lifts[k].fails=0; changed.push(k) } });
+    S.settings.restAuto=$("#s-restAuto").checked;
     const map={inc:"s-inc",incDead:"s-incDead",deloadPct:"s-deload",bar:"s-bar",restOk:"s-restOk",restFail:"s-restFail"};
     for(const k in map){ const x=v(map[k]); if(x>=0) S.settings[k]=x }
     if(S.current) S.current.lifts.forEach(L=>{ if(changed.includes(L.key)) L.w=S.lifts[L.key].w });
@@ -956,6 +1012,8 @@ function renderHelp(){
 }
 document.addEventListener("click",e=>{
   const id=e.target.id;
+  if(id==="wnDone"){ S.seenVersion=APP_VERSION; save(); const m=$("#whatsNew"); if(m) m.remove(); return }
+  if(id==="wnOpen"||id==="wnOpen2"){ showWhatsNew(true); return }
   if(id==="shareBtn"){ shareApp(); return }
   if(id==="installLater"){ S.installSnooze=new Date(Date.now()+7*864e5).toISOString(); save(); renderInstall(); return }
   if(id==="installNow"&&deferredPrompt){ const d=deferredPrompt; d.prompt(); Promise.resolve(d.userChoice).then(()=>{ deferredPrompt=null; renderInstall() }); return }
@@ -978,14 +1036,14 @@ view.addEventListener("click",e=>{
   const set=e.target.closest(".set");
   if(set){
     const li=+set.dataset.l, j=+set.dataset.s, L=S.current.lifts[li];
-    if(L.sets[j]===null){ L.sets[j]=5; pick=null; save(); renderToday(); startTimer(S.settings.restOk,"Good set. Rest.") }
+    if(L.sets[j]===null){ L.sets[j]=5; pick=null; save(); renderToday(); startTimer(restFor(L,true),restMsg(L,true)) }
     else { pick=(pick&&pick.l===li&&pick.j===j)?null:{l:li,j}; renderToday() }
     return;
   }
   const rp=e.target.closest("[data-reps]");
   if(rp&&pick){ const L=S.current.lifts[pick.l], v=rp.dataset.reps, st=S.settings;
     if(v==="clear"){ L.sets[pick.j]=null; pick=null; save(); renderToday(); stopTimer() }
-    else { const n=+v; L.sets[pick.j]=n; pick=null; save(); renderToday(); n===5?startTimer(st.restOk,"Good set. Rest."):startTimer(st.restFail,"Missed reps. Take a longer rest.") }
+    else { const n=+v; L.sets[pick.j]=n; pick=null; save(); renderToday(); startTimer(restFor(L,n===5),restMsg(L,n===5)) }
     return }
   if(e.target.id==="bkLater"){ S.backupSnooze=new Date(Date.now()+3*864e5).toISOString(); save(); renderToday(); return }
   if(e.target.id==="bkCopy"){ copyBackup(true); return }
@@ -1008,7 +1066,7 @@ view.addEventListener("click",e=>{
 });
 
 if(S.wodRun||S.wodScore) tab="wod";
-renderHeader(); render();
+renderHeader(); render(); maybeWhatsNew();
 if("serviceWorker" in navigator && window.isSecureContext && !/claude/.test(location.hostname)){
   try{
     // When a new version takes over, reload once so the update shows right away. Workouts are saved, so nothing is lost.
