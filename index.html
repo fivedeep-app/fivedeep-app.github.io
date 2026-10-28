@@ -181,6 +181,29 @@ textarea{width:100%;min-height:110px;font:13px ui-monospace,Menlo,monospace;bord
 .mbox h2{font:700 26px var(--display);text-transform:uppercase;margin:2px 0 10px}
 .wn ul{margin:6px 0 14px;padding-left:20px;line-height:1.45}
 .wn li{margin:4px 0}
+.wu{margin:10px 0 12px;padding:10px 12px;background:var(--soft);border-radius:12px}
+.wuc{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 6px}
+.wub{font:700 15px var(--body);font-variant-numeric:tabular-nums;border:2px solid var(--silver);background:var(--surface);color:var(--ink);border-radius:10px;padding:7px 10px;cursor:pointer}
+.wub.on{background:var(--good);border-color:var(--good);color:var(--on-miss)}
+.wutip{color:var(--ink)}
+.hact{display:flex;gap:18px;margin-top:8px}
+.hact .linkbtn{margin:0;font-size:14px;color:var(--accent)}
+.hist.editing{border:2px solid var(--accent)}
+.he{padding:10px 0;border-top:1px solid var(--line)}
+.he:first-of-type{border-top:0}
+.he-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.he-w{width:84px;font:700 17px var(--body);padding:8px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--ink);text-align:right}
+.he-sets{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.he-sets label{display:flex;flex-direction:column;gap:2px}
+.he-sets select{font:600 16px var(--body);padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+html.big body{font-size:18px}
+html.big .small,html.big .plates,html.big .last,html.big .scheme,html.big .legend,html.big .ver,html.big .ver .linkbtn{font-size:17px}
+html.big .note,html.big .install,html.big .wn li,html.big .guide p,html.big .terms p,html.big .hl,html.big .field label,html.big .chk,html.big .moves,html.big .wsub{font-size:18px}
+html.big .vid,html.big .fbtn,html.big .chip,html.big .mv,html.big .linkbtn,html.big .wub{font-size:17px}
+html.big .label,html.big legend,html.big .tile .k,html.big .lt .h,html.big .cal .dw{font-size:14px}
+html.big .lt{font-size:17px}
+html.big nav button{font-size:15px}
+@media (max-width:360px){html.big nav button{font-size:13px}html.big .liftname{font-size:22px}}
 .sample{border:1px dashed var(--silver);border-radius:12px;padding:10px 14px;font-size:14px;margin-bottom:14px;color:var(--ink)}
 .tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}
 .tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
@@ -241,8 +264,12 @@ textarea{width:100%;min-height:110px;font:13px ui-monospace,Menlo,monospace;bord
 <script>
 (function(){
 const APP_NAME="Five Deep";
-const APP_VERSION="1.3", APP_DATE="2026-10-28T12:00:00";
+const APP_VERSION="1.4", APP_DATE="2026-10-28T13:00:00";
 const CHANGELOG=[
+ {v:"1.4",d:"2026-10-28T13:00:00",items:[
+  "Warm-up sets above each lift, with plates for the next step. Tap each one as you go. They don't count toward your 5×5.",
+  "Larger text switch in Settings under Display.",
+  "Fix or delete a past workout from History. Fixing your latest one also corrects your next weights."]},
  {v:"1.3",d:"2026-10-28T12:00:00",items:[
   "Rest timer now grows with the weight: 1:30 under 135 lb, up to 4:00 at 315 lb and over, plus a minute after a missed set.",
   "Each lift shows what you did last time, so you know where you're starting.",
@@ -341,6 +368,7 @@ function renderToday(){
       <div class="wt"><button class="step" data-adj="${i}" data-d="-5" aria-label="Lower weight 5 lb">−</button><output>${L.w}</output><small>lb</small><button class="step" data-adj="${i}" data-d="5" aria-label="Raise weight 5 lb">+</button></div></div>
       ${(()=>{ const lt=lastTime(L.key); return lt?`<div class="last">Last time: <b>${lt.w} lb</b> · ${lt.sets.join("/")}${lt.feel?` · ${cap(lt.feel)}`:""}</div>`:"" })()}
       <div class="plates">${isDB()?(L.key==="squat"?"One dumbbell, held at your chest":"Per dumbbell, one in each hand"):platesFor(L.w)} · Rest ${mmss(restFor(L,true))}${f?` · <span class="fails">Missed last ${f} time${f>1?"s":""}</span>`:""}</div>
+      ${warmupHTML(L,i)}
       <div class="sets">${L.sets.map((r,j)=>`<button class="set ${r===null?"":r===5?"done":"miss"}${pick&&pick.l===i&&pick.j===j?" picking":""}" data-l="${i}" data-s="${j}" aria-label="Set ${j+1}: ${r===null?"not done":r+" reps"}">${r===null?"":r}</button>`).join("")}</div>
       ${pick&&pick.l===i?`<div class="repick" role="group" aria-label="Reps for set ${pick.j+1}"><div class="rphead"><span class="small">Set ${pick.j+1}: how many reps did you get?</span><button class="linkbtn" data-reps="clear">Clear</button></div>
         <div class="rp">${[1,2,3,4,5].map(n=>`<button class="rpb${L.sets[pick.j]===n?" on":""}" data-reps="${n}">${n}</button>`).join("")}</div></div>`:""}
@@ -384,6 +412,7 @@ function switchEquip(to){
   S.equip=to; S.lifts=S.liftsBy[to]||JSON.parse(JSON.stringify(to==="dumbbell"?DB_START:BB_START));
   S.current=null; S.review=null; pick=null; confirmMode=null; save(); stopTimer(); render();
   toast(to==="dumbbell"?"Switched to dumbbells":"Switched to barbell") }
+function applyText(){ document.documentElement.classList.toggle("big",!!S.bigText) }
 function fmtLong(d){ return new Date(d).toLocaleDateString(undefined,{month:"long",day:"numeric",year:"numeric"}) }
 function showWhatsNew(all){
   const notes=all?CHANGELOG:CHANGELOG.filter(c=>!S.seenVersion||verGt(c.v,S.seenVersion));
@@ -408,21 +437,39 @@ function restFor(L,full){
   if(st.restAuto===false) return full?st.restOk:st.restFail;
   const t=restTier(L); return full?t:Math.min(300,Math.max(t+60,180)) }
 function restMsg(L,full){ return full?(restTier(L)>=180&&S.settings.restAuto!==false?"Heavy set. Take your full rest.":"Good set. Rest."):"Missed reps. Take a longer rest." }
+function warmups(L){
+  const W=L.w, out=[];
+  if(isDB()){ const x=Math.round(W*0.5/5)*5; if(W>=20&&x>=5&&x<W) out.push({w:x,r:8}); return out }
+  const bar=S.settings.bar;
+  if(L.key!=="dead"&&W>bar+15){ out.push({w:bar,r:5},{w:bar,r:5}) }
+  [[0.4,5],[0.6,3],[0.8,2]].forEach(([p,r])=>{ const x=Math.round(W*p/5)*5;
+    if(x>(L.key==="dead"?90:bar)&&x<W-4&&!out.some(o=>o.w===x)) out.push({w:x,r}) });
+  return out }
+function warmupHTML(L,i){
+  const ws=warmups(L); if(!ws.length) return "";
+  L.wu=(L.wu&&L.wu.length===ws.length)?L.wu:ws.map(()=>false);
+  const nx=ws.findIndex((_,k)=>!L.wu[k]);
+  const tip=nx<0?"Warm-up done. Start your work sets.":isDB()?`Next: ${ws[nx].w} lb × ${ws[nx].r}, nice and easy`:`Next: ${ws[nx].w} lb × ${ws[nx].r} · ${platesFor(ws[nx].w)}`;
+  return `<div class="wu"><div class="small"><b>Warm-up</b> · doesn't count toward your 5×5</div>
+    <div class="wuc">${ws.map((x,k)=>`<button class="wub${L.wu[k]?" on":""}" data-wu="${i}" data-k="${k}" aria-pressed="${!!L.wu[k]}">${L.wu[k]?"✓ ":""}${x.w}×${x.r}</button>`).join("")}</div>
+    <div class="small wutip">${tip}</div></div>` }
 function lastTime(key){
   for(const h of S.history){ if((h.equip||"barbell")!==eq()) continue; const l=h.lifts.find(x=>x.key===key); if(l) return l }
   return null }
+// The 5x5 rule: all sets made = add weight; a miss repeats; third miss in a row drops it.
+function progress(key,w,sets,pf,floor){
+  const st=S.settings, ok=sets.every(r=>r===5); let next,fails,change;
+  if(ok){ const inc=key==="dead"?st.incDead:st.inc; next=w+inc; fails=0; change=`+${inc}` }
+  else{ fails=(pf||0)+1;
+    if(fails>=3){ next=Math.max(floor,Math.round(w*(1-st.deloadPct/100)/5)*5); fails=0; change=`Deload to ${next}` }
+    else{ next=w; change=`Repeat (${fails}/3)` } }
+  return {ok,next,fails,change} }
 function finishWorkout(){
   const c=S.current, st=S.settings, results=[];
   c.lifts.forEach(L=>{
-    const lift=S.lifts[L.key];
-    const ok=L.sets.every(r=>r===5);
-    let change="";
-    if(ok){ const inc=L.key==="dead"?st.incDead:st.inc; lift.w=L.w+inc; lift.fails=0; change=`+${inc}` }
-    else{
-      lift.w=L.w; lift.fails+=1;
-      if(lift.fails>=3){ const nw=round5(L.w*(1-st.deloadPct/100)); change=`Deload to ${nw}`; lift.w=nw; lift.fails=0 }
-      else change=`Repeat (${lift.fails}/3)`;
-    }
+    const lift=S.lifts[L.key], pf=lift.fails;
+    const sets=L.sets.map(r=>r===null?0:r), pr=progress(L.key,L.w,sets,pf,floorW());
+    const ok=pr.ok, change=pr.change; lift.w=pr.next; lift.fails=pr.fails;
     const left=3-lift.fails;
     const msg= ok?`All sets made. Up ${L.key==="dead"?st.incDead:st.inc} lb.`
       : change.startsWith("Deload")?`Third miss in a row, so it dropped ${st.deloadPct}% to ${lift.w} lb. Build back up from here.`
@@ -433,7 +480,7 @@ function finishWorkout(){
       const prev=S.history.filter(h=>(h.equip||"barbell")===eq()).map(h=>h.lifts.find(x=>x.key===L.key)).find(Boolean);
       nudge=prev&&prev.feel==="difficult"?" That's two hard sessions in a row. Consider tapping − to stay at this weight next time.":" It felt difficult. Keep your form tight at the new weight.";
     }
-    results.push({key:L.key,w:L.w,sets:L.sets.map(r=>r===null?0:r),ok,change,msg:msg+nudge,feel:L.feel||null});
+    results.push({key:L.key,w:L.w,sets,ok,change,msg:msg+nudge,feel:L.feel||null,pf});
   });
   S.history.unshift({date:new Date().toISOString(),type:c.type,equip:eq(),lifts:results});
   S.next=c.type==="A"?"B":"A"; S.current=null; confirmMode=null;
@@ -470,16 +517,67 @@ document.addEventListener("visibilitychange",()=>{
 });
 
 /* ---------- HISTORY ---------- */
+let histEdit=null, histDel=null;
 function renderHistory(){
   if(!S.history.length){ view.innerHTML=`<div class="empty">No workouts yet. Finish your first session on the Today tab and it shows up here.</div>`; return }
-  view.innerHTML=S.history.map(histCard).join("");
+  view.innerHTML=`<p class="small" style="margin:0 0 10px">Logged something wrong? Tap Edit on that workout to fix it.</p>`+S.history.map((h,i)=>histEdit===i?histEditCard(h,i):histCard(h,i)).join("");
 }
-function histCard(h){
-    const d=new Date(h.date);
-    return `<article class="hist"><h3>Day ${h.type}<span>${d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric",year:"numeric"})}</span></h3>
+function histCard(h,i){
+    const d=new Date(h.date), editable=typeof i==="number";
+    return `<article class="hist"><h3>Day ${h.type}${(h.equip||"barbell")==="dumbbell"?" · Dumbbells":""}<span>${d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric",year:"numeric"})}</span></h3>
       ${h.lifts.map(l=>`<div class="hl"><span>${LN(l.key,h.equip||"barbell")} <b>${l.w}</b> lb</span><span>${l.sets.join("/")} · <span class="${l.ok?"ok":"bad"}">${esc(l.change)}</span>${l.feel?` · <span class="feelt ${l.feel}">${cap(l.feel)}</span>`:""}</span></div>`).join("")}
+      ${editable?(histDel===i?`<div class="confirm" style="margin-top:10px"><b>Delete this workout?</b><p class="small" style="margin:6px 0 10px">${h.lifts.some(l=>newestWith(l.key,h.equip||"barbell")===i&&typeof l.pf==="number")?"Your next weights go back to what they were before it.":"It comes out of your history and charts."} This can't be undone.</p>
+        <div class="row"><button class="btn ghost" data-hdelno="${i}">Keep it</button><button class="btn danger" data-hdelyes="${i}">Delete</button></div></div>`
+        :`<div class="hact"><button class="linkbtn" data-hedit="${i}">Edit</button><button class="linkbtn" data-hdel="${i}">Delete</button></div>`):""}
     </article>`;
 }
+function histEditCard(h,i){
+  const eqp=h.equip||"barbell";
+  return `<article class="hist editing"><h3>Edit Day ${h.type}<span>${fmtD(h.date)}</span></h3>
+    ${h.lifts.map((l,li)=>`<div class="he"><div class="he-top"><b>${LN(l.key,eqp)}</b>
+        <label class="small">Weight <input class="he-w" id="he-w-${li}" type="number" inputmode="decimal" step="5" min="1" value="${l.w}"> lb</label></div>
+      <div class="he-sets">${l.sets.map((r,j)=>`<label class="small">Set ${j+1}<select id="he-s-${li}-${j}">${[0,1,2,3,4,5].map(n=>`<option value="${n}"${r===n?" selected":""}>${n}</option>`).join("")}</select></label>`).join("")}
+        <label class="small">Feel<select id="he-f-${li}"><option value="">None</option>${FEELS.map(f=>`<option value="${f}"${l.feel===f?" selected":""}>${cap(f)}</option>`).join("")}</select></label></div></div>`).join("")}
+    <p class="err" id="heErr" hidden></p>
+    <div class="row" style="margin-top:10px"><button class="btn ghost" id="heCancel" style="margin:0">Cancel</button><button class="btn" id="heSave" style="margin:0">Save changes</button></div>
+  </article>`;
+}
+// Index of the newest workout (same equipment) that includes this lift
+function newestWith(key,eqp){ return S.history.findIndex(h=>(h.equip||"barbell")===eqp&&h.lifts.some(l=>l.key===key)) }
+function liftsFor(eqp){ if(eqp===eq()) return S.lifts; S.liftsBy=S.liftsBy||{}; return S.liftsBy[eqp]||null }
+function saveHistEdit(i){
+  const h=S.history[i], eqp=h.equip||"barbell", err=m=>{ const e=$("#heErr"); e.textContent=m; e.hidden=false };
+  const vals=h.lifts.map((l,li)=>({w:parseFloat($("#he-w-"+li).value), sets:l.sets.map((_,j)=>+$(`#he-s-${li}-${j}`).value), feel:$("#he-f-"+li).value||null}));
+  if(vals.some(v=>!(v.w>0&&v.w<2000))) return err("Enter a weight for every lift.");
+  const notes=[], target=liftsFor(eqp), floor=eqp==="dumbbell"?5:S.settings.bar;
+  h.lifts.forEach((l,li)=>{
+    const v=vals[li]; l.w=v.w; l.sets=v.sets; l.feel=v.feel;
+    const pf=typeof l.pf==="number"?l.pf:null, pr=progress(l.key,l.w,l.sets,pf||0,floor);
+    l.ok=pr.ok; l.change=pr.change; l.msg="";
+    if(newestWith(l.key,eqp)===i&&target&&pf!==null){ const was=target[l.key].w; target[l.key].w=pr.next; target[l.key].fails=pr.fails; if(was!==pr.next) notes.push(`${LN(l.key,eqp)} ${pr.next} lb`) } });
+  if(S.current&&eqp===eq()) S.current.lifts.forEach(L=>{ if(!L.sets.some(r=>r!==null)) L.w=S.lifts[L.key].w });
+  if(i===0) S.review=null;
+  histEdit=null; save(); renderHistory();
+  toast(notes.length?"Saved. Next: "+notes.join(", "):"Saved. History and charts updated.") }
+function deleteHist(i){
+  const h=S.history[i], eqp=h.equip||"barbell", target=liftsFor(eqp);
+  h.lifts.forEach(l=>{ if(newestWith(l.key,eqp)===i&&target&&typeof l.pf==="number"){ target[l.key].w=l.w; target[l.key].fails=l.pf } });
+  const untouched=!S.current||!S.current.lifts.some(L=>L.sets.some(r=>r!==null));
+  S.history.splice(i,1);
+  if(i===0&&untouched&&eqp===eq()){ S.next=h.type; S.current=null }
+  if(i===0) S.review=null;
+  histDel=null; save(); renderHistory(); toast("Workout deleted") }
+view.addEventListener("click",e=>{
+  if(tab!=="history") return;
+  const t=e.target, d=t.dataset;
+  if(d.hedit!==undefined){ histEdit=+d.hedit; histDel=null; renderHistory(); const c=document.querySelector(".hist.editing"); if(c) c.scrollIntoView({block:"start"}); return }
+  if(d.hdel!==undefined){ histDel=+d.hdel; histEdit=null; renderHistory(); return }
+  if(d.hdelno!==undefined){ histDel=null; renderHistory(); return }
+  if(d.hdelyes!==undefined){ deleteHist(+d.hdelyes); return }
+  if(t.id==="heCancel"){ histEdit=null; renderHistory(); return }
+  if(t.id==="heSave"){ saveHistEdit(histEdit); return }
+});
+view.addEventListener("input",e=>{ if(tab==="history"){ const er=$("#heErr"); if(er) er.hidden=true } });
 
 /* ---------- TERMS ---------- */
 const TERMS=`<p><b>Five Deep is a workout log.</b> It records the weights and reps you enter and suggests your next weight using a standard 5x5 program. It is not medical advice, coaching, or a training plan made for you.</p>
@@ -714,6 +812,9 @@ function renderSettings(){
     <label class="small" for="fileIn" style="display:block;margin-top:10px">Or restore from a backup file:</label>
     <input id="fileIn" type="file" accept="application/json,.json">
   </fieldset>
+  <fieldset><legend>Display</legend>
+    <label class="chk" style="border-top:0;padding:0"><input type="checkbox" id="s-big" ${S.bigText?"checked":""}> Larger text</label>
+    <p class="small" style="margin:6px 0 0">Makes the small gray text bigger everywhere, like plate math, rest times, and tips.</p></fieldset>
   <fieldset><legend>Help</legend><button class="btn ghost" id="openHelp" style="margin:0">How to use Five Deep</button><button class="btn ghost" id="wnOpen2" style="margin:8px 0 0">What's new in version ${APP_VERSION}</button></fieldset>
   <fieldset><legend>Safety and terms</legend><div class="terms">${TERMS}</div>
     <p class="small" style="margin:0">${S.ack?"Accepted on "+new Date(S.ack).toLocaleDateString(undefined,{month:"long",day:"numeric",year:"numeric"})+".":""}</p></fieldset>
@@ -761,6 +862,7 @@ function renderSettings(){
     const t=$("#eraseTxt"); if(t.value.trim().toUpperCase()!=="ERASE"){ $("#eraseErr").hidden=false; t.focus(); return }
     S=fresh(); confirmMode=null; save(); stopTimer(); renderHeader(); toast("All data erased"); renderSettings() };
   const et=$("#eraseTxt"); if(et){ et.oninput=()=>{ $("#eraseErr").hidden=true }; et.scrollIntoView({block:"center"}) }
+  const bg=$("#s-big"); if(bg) bg.onchange=()=>{ S.bigText=bg.checked; save(); applyText(); toast(bg.checked?"Larger text on":"Larger text off") };
   const eb=$("#eraseBackup"); if(eb) eb.onclick=()=>{ $("#backupText").value=JSON.stringify(S); copyBackup(false); setTimeout(()=>{ if(confirmMode==="reset") renderSettings() },300) };
 }
 function restore(txt){
@@ -1030,7 +1132,7 @@ function render(){
   $("#helpBtn").hidden=false;
   if(tab==="help") renderHelp(); else if(tab==="today") renderToday(); else if(tab==="wod") renderWod(); else if(tab==="progress") renderProgress(); else if(tab==="history") renderHistory(); else renderSettings();
 }
-document.querySelector("nav").onclick=e=>{ const b=e.target.closest("button"); if(!b) return; tab=b.dataset.view; confirmMode=null; pick=null; render(); window.scrollTo(0,0) };
+document.querySelector("nav").onclick=e=>{ const b=e.target.closest("button"); if(!b) return; tab=b.dataset.view; confirmMode=null; pick=null; histEdit=null; histDel=null; render(); window.scrollTo(0,0) };
 view.addEventListener("click",e=>{
   if(tab!=="today") return;
   const set=e.target.closest(".set");
@@ -1049,7 +1151,9 @@ view.addEventListener("click",e=>{
   if(e.target.id==="bkCopy"){ copyBackup(true); return }
   const eqb=e.target.closest("[data-equip]"); if(eqb){ switchEquip(eqb.dataset.equip); return }
   const adj=e.target.closest("[data-adj]");
-  if(adj){ const L=S.current.lifts[+adj.dataset.adj]; L.w=Math.max(floorW(),L.w+parseFloat(adj.dataset.d)); save(); renderToday(); return }
+  if(adj){ const L=S.current.lifts[+adj.dataset.adj]; L.w=Math.max(floorW(),L.w+parseFloat(adj.dataset.d)); L.wu=null; save(); renderToday(); return }
+  const wb=e.target.closest("[data-wu]");
+  if(wb){ const L=S.current.lifts[+wb.dataset.wu], k=+wb.dataset.k; L.wu=L.wu||[]; L.wu[k]=!L.wu[k]; save(); renderToday(); return }
   const fe=e.target.closest("[data-feel]");
   if(fe){ const L=S.current.lifts[+fe.dataset.feel]; L.feel=L.feel===fe.dataset.f?null:fe.dataset.f; save(); renderToday(); return }
   if(e.target.id==="finish"){ const all=S.current.lifts.every(L=>L.sets.every(r=>r!==null)); if(all) finishWorkout(); else { confirmMode="finish"; renderToday() } }
@@ -1066,7 +1170,7 @@ view.addEventListener("click",e=>{
 });
 
 if(S.wodRun||S.wodScore) tab="wod";
-renderHeader(); render(); maybeWhatsNew();
+applyText(); renderHeader(); render(); maybeWhatsNew();
 if("serviceWorker" in navigator && window.isSecureContext && !/claude/.test(location.hostname)){
   try{
     // When a new version takes over, reload once so the update shows right away. Workouts are saved, so nothing is lost.
