@@ -177,6 +177,7 @@ textarea{width:100%;min-height:110px;font:13px ui-monospace,Menlo,monospace;bord
 .ver{text-align:center;font-size:13px;color:var(--muted);margin:18px 0 0}
 .ver .linkbtn{margin:0;font-size:13px}
 .modal{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.mbox:focus{outline:none}
 .mbox{background:var(--surface);color:var(--ink);border-radius:16px;padding:18px;max-width:480px;width:100%;max-height:100%;overflow:auto;border:1px solid var(--line)}
 .mbox h2{font:700 26px var(--display);text-transform:uppercase;margin:2px 0 10px}
 .wn ul{margin:6px 0 14px;padding-left:20px;line-height:1.45}
@@ -421,7 +422,10 @@ function showWhatsNew(all){
     ${notes.map(c=>`<div class="wn"><div class="small"><b>Version ${c.v}</b> · ${fmtLong(c.d)}</div><ul>${c.items.map(i=>`<li>${i}</li>`).join("")}</ul></div>`).join("")}
     <button class="btn" id="wnDone">Got it</button></div>`;
   document.body.appendChild(box);
-  $("#wnDone").focus() }
+  const mb=box.querySelector(".mbox"); mb.tabIndex=-1;
+  const top=()=>{ box.scrollTop=0; mb.scrollTop=0 };
+  try{ mb.focus({preventScroll:true}) }catch(e){ mb.focus() }
+  top(); requestAnimationFrame(top); setTimeout(top,250) }
 function verGt(a,b){ const x=a.split(".").map(Number), y=String(b).split(".").map(Number); for(let i=0;i<Math.max(x.length,y.length);i++){ if((x[i]||0)!==(y[i]||0)) return (x[i]||0)>(y[i]||0) } return false }
 function maybeWhatsNew(){
   if(!S.ack||S.wodRun||$("#whatsNew")) return;
