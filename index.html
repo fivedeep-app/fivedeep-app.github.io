@@ -18,16 +18,16 @@
 /* Layout: one-column gym logbook in team red and silver. Big tap targets, today's lifts as stacked cards, rest timer pinned to the bottom, progress dashboard as its own tab. */
 :root{
   --bg:#eceef1; --surface:#ffffff; --ink:#16181b; --muted:#5d636b; --line:#cfd3d8;
-  --accent:#c8102e; --accent-ink:#ffffff; --on-miss:#ffffff; --silver:#8a9099; --good:#1f7a45; --miss:#b45309; --soft:#dfe2e6;
+  --accent:#c8102e; --accent-ink:#ffffff; --on-miss:#ffffff; --ring:#3a3f45; --silver:#8a9099; --good:#1f7a45; --miss:#b45309; --soft:#dfe2e6;
   --display:"Saira Condensed","Arial Narrow",system-ui,sans-serif;
   --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#121315; --surface:#1c1e21; --ink:#eceef1; --muted:#a2a8b0; --line:#2f3236;
-  --accent:#e8384f; --accent-ink:#ffffff; --on-miss:#16181b; --silver:#b8bec6; --good:#4cc283; --miss:#f0a050; --soft:#25282c; color-scheme:dark}}
+  --accent:#e8384f; --accent-ink:#ffffff; --on-miss:#16181b; --ring:#ffffff; --silver:#b8bec6; --good:#4cc283; --miss:#f0a050; --soft:#25282c; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#121315; --surface:#1c1e21; --ink:#eceef1; --muted:#a2a8b0; --line:#2f3236;
-  --accent:#e8384f; --accent-ink:#ffffff; --on-miss:#16181b; --silver:#b8bec6; --good:#4cc283; --miss:#f0a050; --soft:#25282c; color-scheme:dark}
+  --accent:#e8384f; --accent-ink:#ffffff; --on-miss:#16181b; --ring:#ffffff; --silver:#b8bec6; --good:#4cc283; --miss:#f0a050; --soft:#25282c; color-scheme:dark}
 *{box-sizing:border-box}
 html,body{background:var(--bg)}
 body{color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;-webkit-tap-highlight-color:transparent}
@@ -61,7 +61,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px soli
 .plates{font-size:13px;color:var(--muted);margin:4px 0 10px;font-variant-numeric:tabular-nums}
 .fails{color:var(--miss);font-weight:600}
 .sets{display:flex;gap:8px;flex-wrap:wrap}
-.set{width:54px;height:54px;border-radius:50%;border:2px dashed var(--line);background:transparent;color:var(--muted);font:800 22px var(--display);cursor:pointer;font-variant-numeric:tabular-nums}
+.set{width:54px;height:54px;border-radius:50%;border:3px solid var(--ring);background:transparent;color:var(--muted);font:800 22px var(--display);cursor:pointer;font-variant-numeric:tabular-nums}
 .set.done{border:2px solid var(--accent);background:var(--accent);color:var(--accent-ink)}
 .set.miss{border:2px solid var(--miss);background:transparent;color:var(--miss)}
 .btn{display:block;width:100%;font:700 17px var(--body);border:0;border-radius:12px;padding:15px;background:var(--accent);color:var(--accent-ink);cursor:pointer;margin-top:6px}
@@ -162,6 +162,16 @@ textarea{width:100%;min-height:110px;font:13px ui-monospace,Menlo,monospace;bord
 .install{border:2px solid var(--accent);background:var(--surface);border-radius:14px;padding:12px 14px;margin:12px 0 14px}
 .install ol{margin:8px 0 0;padding-left:22px;line-height:1.5}
 .install li{margin:2px 0}
+.feel{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+.fb{display:flex;gap:6px;flex-wrap:wrap}
+.fbtn{font:600 14px var(--body);border:2px solid var(--silver);background:transparent;color:var(--ink);border-radius:999px;padding:7px 12px;cursor:pointer}
+.fbtn.easy.on{background:var(--good);border-color:var(--good);color:var(--on-miss)}
+.fbtn.moderate.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.fbtn.difficult.on{background:var(--miss);border-color:var(--miss);color:var(--on-miss)}
+.feelt.easy{color:var(--good);font-weight:600}.feelt.difficult{color:var(--miss);font-weight:600}.feelt.moderate{font-weight:600}
+.eqsw{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--soft);border-radius:12px;padding:4px}
+.eqb{font:700 16px var(--body);border:0;background:transparent;color:var(--muted);padding:11px 0;border-radius:9px;cursor:pointer}
+.eqb.on{background:var(--accent);color:var(--accent-ink)}
 .sample{border:1px dashed var(--silver);border-radius:12px;padding:10px 14px;font-size:14px;margin-bottom:14px;color:var(--ink)}
 .tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}
 .tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
@@ -229,12 +239,24 @@ const SETS={squat:5,bench:5,row:5,ohp:5,dead:1};
 const PLATES=[45,35,25,10,5,2.5];
 // Short form demos from Barbell Logic's "Gym Shorts" series
 const VIDEOS={squat:"jyopTyOjXb0",bench:"t3f2L7NRRUY",row:"qbES7k4HDf8",ohp:"AhGW3XFG3M8",dead:"3oMjoOm5O18"};
+// Dumbbell versions for beginners (demos from BarBend and CrossFit)
+const DB_LIFTS={squat:"Goblet Squat",bench:"Dumbbell Bench Press",row:"Dumbbell Row",ohp:"Dumbbell Overhead Press",dead:"Dumbbell Deadlift"};
+const DB_VIDEOS={squat:"6AAqJyUDTnk",bench:"WLTU1j7Ur8M",row:"ufhQhwyrx-4",ohp:"qEwKCR5JCog",dead:"JNpUNRPQkAk"};
+const DB_START={squat:{w:20,fails:0},bench:{w:15,fails:0},row:{w:15,fails:0},ohp:{w:10,fails:0},dead:{w:20,fails:0}};
+const BB_START={squat:{w:95,fails:0},bench:{w:75,fails:0},row:{w:75,fails:0},ohp:{w:55,fails:0},dead:{w:115,fails:0}};
+function eq(){ return S.equip==="dumbbell"?"dumbbell":"barbell" }
+function isDB(){ return eq()==="dumbbell" }
+function LN(k,e){ return ((e||eq())==="dumbbell"?DB_LIFTS:LIFTS)[k] }
+function VID(k){ return (isDB()?DB_VIDEOS:VIDEOS)[k] }
+function floorW(){ return isDB()?5:S.settings.bar }
+const FEELS=["easy","moderate","difficult"];
+function cap(x){ return x.charAt(0).toUpperCase()+x.slice(1) }
 
 function fresh(){
   return {
     name:"", setupDone:false,
     settings:{inc:5,incDead:5,deloadPct:10,restOk:90,restFail:180,bar:45},
-    lifts:{squat:{w:95,fails:0},bench:{w:75,fails:0},row:{w:75,fails:0},ohp:{w:55,fails:0},dead:{w:115,fails:0}},
+    lifts:JSON.parse(JSON.stringify(BB_START)), equip:"barbell",
     next:"A", history:[], current:null
   };
 }
@@ -247,7 +269,7 @@ const $=s=>document.querySelector(s);
 const view=$("#view");
 let tab="today", confirmMode=null, pick=null;
 
-function round5(x){ return Math.max(S.settings.bar, Math.round(x/5)*5) }
+function round5(x){ return Math.max(floorW(), Math.round(x/5)*5) }
 function platesFor(w){
   let side=(w-S.settings.bar)/2; if(side<=0) return "Empty bar";
   const out=[]; for(const p of PLATES){ while(side>=p-0.001){ out.push(p); side-=p } }
@@ -278,7 +300,7 @@ function renderToday(){
   }
   if(!S.setupDone) h+=`<div class="note"><b>First time?</b> These are sample starting weights. Go to <b>Settings</b> and enter your name, your starting weights, and your bodyweight if you want to track it, before your first session.</div>`;
   if(breakDue()){
-    const prev=Object.keys(LIFTS).map(k=>`${LIFTS[k]} ${S.lifts[k].w} → ${round5(S.lifts[k].w*0.9)}`).join(", ");
+    const prev=Object.keys(LIFTS).map(k=>`${LN(k)} ${S.lifts[k].w} → ${round5(S.lifts[k].w*0.9)}`).join(", ");
     h+=`<div class="note comeback"><b>Welcome back. It's been ${daysOff()} days since your last workout.</b>
       <p style="margin:6px 0">Coming back about 10% lighter gives your body time to catch up and lowers the risk of getting hurt. You'll be back to your old weights in a couple of weeks.</p>
       <p class="small" style="margin:0 0 10px">${prev}</p>
@@ -290,12 +312,14 @@ function renderToday(){
   c.lifts.forEach((L,i)=>{
     const f=S.lifts[L.key].fails;
     h+=`<section class="lift">
-      <div class="lifttop"><div><div class="liftname">${LIFTS[L.key]}</div><div class="scheme">${SETS[L.key]}×5</div><div><a class="vid" href="https://www.youtube.com/watch?v=${VIDEOS[L.key]}" target="_blank" rel="noopener">Watch form ▶</a></div></div>
-      <div class="wt"><button class="step" data-adj="${i}" data-d="-1" aria-label="Lower weight">−</button><output>${L.w}</output><small>lb</small><button class="step" data-adj="${i}" data-d="1" aria-label="Raise weight">+</button></div></div>
-      <div class="plates">${platesFor(L.w)}${f?` · <span class="fails">Missed last ${f} time${f>1?"s":""}</span>`:""}</div>
+      <div class="lifttop"><div><div class="liftname">${LN(L.key)}</div><div class="scheme">${SETS[L.key]}×5</div><div><a class="vid" href="https://www.youtube.com/watch?v=${VID(L.key)}" target="_blank" rel="noopener">Watch form ▶</a></div></div>
+      <div class="wt"><button class="step" data-adj="${i}" data-d="-5" aria-label="Lower weight 5 lb">−</button><output>${L.w}</output><small>lb</small><button class="step" data-adj="${i}" data-d="5" aria-label="Raise weight 5 lb">+</button></div></div>
+      <div class="plates">${isDB()?(L.key==="squat"?"One dumbbell, held at your chest":"Per dumbbell, one in each hand"):platesFor(L.w)}${f?` · <span class="fails">Missed last ${f} time${f>1?"s":""}</span>`:""}</div>
       <div class="sets">${L.sets.map((r,j)=>`<button class="set ${r===null?"":r===5?"done":"miss"}${pick&&pick.l===i&&pick.j===j?" picking":""}" data-l="${i}" data-s="${j}" aria-label="Set ${j+1}: ${r===null?"not done":r+" reps"}">${r===null?"":r}</button>`).join("")}</div>
       ${pick&&pick.l===i?`<div class="repick" role="group" aria-label="Reps for set ${pick.j+1}"><div class="rphead"><span class="small">Set ${pick.j+1}: how many reps did you get?</span><button class="linkbtn" data-reps="clear">Clear</button></div>
         <div class="rp">${[1,2,3,4,5].map(n=>`<button class="rpb${L.sets[pick.j]===n?" on":""}" data-reps="${n}">${n}</button>`).join("")}</div></div>`:""}
+      <div class="feel" role="group" aria-label="How did ${LN(L.key)} feel?"><span class="small">How did it feel?</span>
+        <div class="fb">${FEELS.map(f=>`<button class="fbtn ${f}${L.feel===f?" on":""}" data-feel="${i}" data-f="${f}" aria-pressed="${L.feel===f}">${cap(f)}</button>`).join("")}</div></div>
     </section>`;
   });
   if(confirmMode==="finish"){
@@ -311,7 +335,7 @@ function renderToday(){
     h+=`<button class="btn ghost" id="discardBtn">Discard this workout</button>`;
   }
   h+=`<div class="panel" style="margin-top:20px"><h2>Form videos</h2><p class="small" style="margin:-4px 0 6px">All five lifts. Day A is squat, bench, and row. Day B is squat, overhead press, and deadlift.</p>
-    ${Object.keys(LIFTS).map(k=>`<a class="vrow" href="https://www.youtube.com/watch?v=${VIDEOS[k]}" target="_blank" rel="noopener"><span>${LIFTS[k]}</span><span class="vid">Watch ▶</span></a>`).join("")}</div>`;
+    ${Object.keys(LIFTS).map(k=>`<a class="vrow" href="https://www.youtube.com/watch?v=${VID(k)}" target="_blank" rel="noopener"><span>${LN(k)}</span><span class="vid">Watch ▶</span></a>`).join("")}</div>`;
   view.innerHTML=h;
 }
 
@@ -340,9 +364,15 @@ function finishWorkout(){
     const msg= ok?`All sets made. Up ${L.key==="dead"?st.incDead:st.inc} lb.`
       : change.startsWith("Deload")?`Third miss in a row, so it dropped ${st.deloadPct}% to ${lift.w} lb. Build back up from here.`
       : `Missed reps. Same weight next time. ${left} more miss${left===1?"":"es"} in a row and it drops ${st.deloadPct}%.`;
-    results.push({key:L.key,w:L.w,sets:L.sets.map(r=>r===null?0:r),ok,change,msg});
+    let nudge="";
+    if(ok&&L.feel==="easy") nudge=" It felt easy. If every rep looked clean, you can tap + for an extra 5 lb.";
+    if(ok&&L.feel==="difficult"){
+      const prev=S.history.filter(h=>(h.equip||"barbell")===eq()).map(h=>h.lifts.find(x=>x.key===L.key)).find(Boolean);
+      nudge=prev&&prev.feel==="difficult"?" That's two hard sessions in a row. Consider tapping − to stay at this weight next time.":" It felt difficult. Keep your form tight at the new weight.";
+    }
+    results.push({key:L.key,w:L.w,sets:L.sets.map(r=>r===null?0:r),ok,change,msg:msg+nudge,feel:L.feel||null});
   });
-  S.history.unshift({date:new Date().toISOString(),type:c.type,lifts:results});
+  S.history.unshift({date:new Date().toISOString(),type:c.type,equip:eq(),lifts:results});
   S.next=c.type==="A"?"B":"A"; S.current=null; confirmMode=null;
   S.review=results.map(r=>({key:r.key,change:r.change,msg:r.msg})); pick=null;
   save(); stopTimer(); toast("Workout saved"); tab="progress"; render(); window.scrollTo(0,0);
@@ -384,7 +414,7 @@ function renderHistory(){
 function histCard(h){
     const d=new Date(h.date);
     return `<article class="hist"><h3>Day ${h.type}<span>${d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric",year:"numeric"})}</span></h3>
-      ${h.lifts.map(l=>`<div class="hl"><span>${LIFTS[l.key]} <b>${l.w}</b> lb</span><span>${l.sets.join("/")} · <span class="${l.ok?"ok":"bad"}">${esc(l.change)}</span></span></div>`).join("")}
+      ${h.lifts.map(l=>`<div class="hl"><span>${LN(l.key,h.equip||"barbell")} <b>${l.w}</b> lb</span><span>${l.sets.join("/")} · <span class="${l.ok?"ok":"bad"}">${esc(l.change)}</span>${l.feel?` · <span class="feelt ${l.feel}">${cap(l.feel)}</span>`:""}</span></div>`).join("")}
     </article>`;
 }
 
@@ -430,7 +460,7 @@ function sampleData(){
   return {history:hist,lifts};
 }
 function liftSeries(hist,k){
-  const pts=[]; hist.slice().reverse().forEach(h=>h.lifts.forEach(l=>{ if(l.key===k) pts.push({d:new Date(h.date),w:l.w,ok:l.ok}) })); return pts;
+  const pts=[]; hist.slice().reverse().filter(h=>(h.equip||"barbell")===eq()).forEach(h=>h.lifts.forEach(l=>{ if(l.key===k) pts.push({d:new Date(h.date),w:l.w,ok:l.ok}) })); return pts;
 }
 function niceStep(raw,steps){
   if(steps){ for(const v of steps) if(v>=raw) return v; return steps[steps.length-1] }
@@ -538,9 +568,9 @@ function renderProgress(){
   let h="";
   if(S.review&&S.review.length){
     h+=`<div class="panel review"><h2>Next session</h2>
-      <p class="small" style="margin:-4px 0 10px">The app set these from today's results. Felt too light or too heavy? Change them now, 1 lb per tap.</p>
-      ${S.review.map(r=>`<div class="rv"><div class="rvtop"><div style="font-weight:600">${LIFTS[r.key]}</div>
-        <div class="wt"><button class="step" data-rv="${r.key}" data-d="-1" aria-label="Lower next ${LIFTS[r.key]} weight">−</button><output>${S.lifts[r.key].w}</output><small>lb</small><button class="step" data-rv="${r.key}" data-d="1" aria-label="Raise next ${LIFTS[r.key]} weight">+</button></div></div>
+      <p class="small" style="margin:-4px 0 10px">The app set these from today's results. Felt too light or too heavy? Change them now, 5 lb per tap.</p>
+      ${S.review.map(r=>`<div class="rv"><div class="rvtop"><div style="font-weight:600">${LN(r.key)}</div>
+        <div class="wt"><button class="step" data-rv="${r.key}" data-d="-5" aria-label="Lower next ${LN(r.key)} weight">−</button><output>${S.lifts[r.key].w}</output><small>lb</small><button class="step" data-rv="${r.key}" data-d="5" aria-label="Raise next ${LN(r.key)} weight">+</button></div></div>
         <div class="small">${esc(r.msg||r.change)}</div></div>`).join("")}
       <button class="btn" id="rvDone">Looks good</button></div>`;
   }
@@ -552,11 +582,11 @@ function renderProgress(){
     <div class="tile"><div class="v">${big3}</div><div class="k">Squat + bench + deadlift</div></div>
   </div>`;
   h+=`<div class="panel"><h2>Weight over time</h2>
-    <div class="chips">${Object.keys(LIFTS).map(k=>`<button class="chip" data-lift="${k}" aria-pressed="${k===pLift}">${LIFTS[k]}</button>`).join("")}</div>
-    <div class="chart">${chartSVG(liftSeries(hist,pLift),LIFTS[pLift],{minStep:5,steps:[5,10,20,25,50,100]})}</div>
+    <div class="chips">${Object.keys(LIFTS).map(k=>`<button class="chip" data-lift="${k}" aria-pressed="${k===pLift}">${LN(k)}</button>`).join("")}</div>
+    <div class="chart">${chartSVG(liftSeries(hist,pLift),LN(pLift),{minStep:5,steps:[5,10,20,25,50,100]})}</div>
     <div class="legend"><span><i style="background:var(--accent)"></i>All sets made</span><span><i style="border:2px solid var(--miss);width:10px;height:10px"></i>Missed reps</span></div></div>`;
   h+=`<div class="panel"><h2>Every lift</h2><div class="lt"><span class="h">Lift</span><span class="h n">Start</span><span class="h n">Next</span><span class="h n">Gain</span>
-    ${rows.map(r=>`<span>${LIFTS[r.k]}</span><span class="n">${r.start}</span><span class="n"><b>${r.now}</b></span><span class="n ${r.now>r.start?"up":""}">${r.now>r.start?"+":""}${r.now-r.start}</span>`).join("")}
+    ${rows.map(r=>`<span>${LN(r.k)}</span><span class="n">${r.start}</span><span class="n"><b>${r.now}</b></span><span class="n ${r.now>r.start?"up":""}">${r.now>r.start?"+":""}${r.now-r.start}</span>`).join("")}
   </div><p class="small" style="margin:10px 0 0">Next is the weight the app will give you next session.</p></div>`;
   const wds=real?(S.wods||[]):sampleWods();
   h+=wodProgressHTML(wds,!real);
@@ -571,7 +601,7 @@ view.addEventListener("click",e=>{
     S.bw=S.bw||[]; const k=dayKey(new Date()); S.bw=S.bw.filter(x=>dayKey(x.date)!==k); S.bw.push({date:new Date().toISOString(),w:Math.round(v*10)/10});
     save(); renderProgress(); toast("Weight logged"); return }
   const bd=e.target.closest("[data-bwdel]"); if(bd){ S.bw=(S.bw||[]).filter(x=>x.date!==bd.dataset.bwdel); save(); renderProgress(); return }
-  const rv=e.target.closest("[data-rv]"); if(rv){ const L=S.lifts[rv.dataset.rv]; L.w=Math.max(S.settings.bar,L.w+parseFloat(rv.dataset.d)); save(); renderProgress(); return }
+  const rv=e.target.closest("[data-rv]"); if(rv){ const L=S.lifts[rv.dataset.rv]; L.w=Math.max(floorW(),L.w+parseFloat(rv.dataset.d)); save(); renderProgress(); return }
   if(e.target.id==="rvDone"){ S.review=null; save(); renderProgress(); toast("Next session set"); return }
   const c=e.target.closest("[data-lift]"); if(c){ pLift=c.dataset.lift; renderProgress(); return }
   const wp=e.target.closest("[data-wodp]"); if(wp){ pWod=wp.dataset.wodp; renderProgress(); return }
@@ -593,8 +623,11 @@ function renderSettings(){
   <form id="setForm">
   <fieldset><legend>Lifter</legend><div class="field"><label for="f-name">Name</label><input id="f-name" type="text" value="${esc(S.name)}" placeholder="Your name"></div>
     <div class="field"><label for="f-bw">Bodyweight (lb)<br><span class="small">Optional</span></label><input id="f-bw" type="number" inputmode="decimal" step="0.1" placeholder="165.0" value="${(S.bw&&S.bw.length)?S.bw.slice().sort((a,b)=>a.date<b.date?-1:1).pop().w:""}"></div></fieldset>
-  <fieldset><legend>Next working weights (lb)</legend>
-    ${Object.keys(LIFTS).map(k=>num("w-"+k,S.lifts[k].w,LIFTS[k],1)).join("")}
+  <fieldset><legend>Equipment</legend>
+    <div class="eqsw" role="radiogroup" aria-label="Equipment">${["barbell","dumbbell"].map(x=>`<button type="button" class="eqb${eq()===x?" on":""}" data-equip="${x}" role="radio" aria-checked="${eq()===x}">${x==="barbell"?"Barbell":"Dumbbells"}</button>`).join("")}</div>
+    <p class="small" style="margin:8px 0 0">${isDB()?"Dumbbell versions of all five lifts, good for beginners or training at home. Weights are per dumbbell. Switch back anytime, and each keeps its own weights and history.":"New to lifting or no barbell? Switch to dumbbell versions of all five lifts. Each keeps its own weights and history."}</p></fieldset>
+  <fieldset><legend>Next working weights (${isDB()?"lb per dumbbell":"lb"})</legend>
+    ${Object.keys(LIFTS).map(k=>num("w-"+k,S.lifts[k].w,LN(k),1)).join("")}
     <p class="small">Start lighter than you think. The program adds weight every session, so easy early weeks are the point.</p>
   </fieldset>
   <fieldset><legend>Progression</legend>
@@ -663,6 +696,12 @@ function renderSettings(){
     const t=$("#eraseTxt"); if(t.value.trim().toUpperCase()!=="ERASE"){ $("#eraseErr").hidden=false; t.focus(); return }
     S=fresh(); confirmMode=null; save(); stopTimer(); renderHeader(); toast("All data erased"); renderSettings() };
   const et=$("#eraseTxt"); if(et){ et.oninput=()=>{ $("#eraseErr").hidden=true }; et.scrollIntoView({block:"center"}) }
+  document.querySelectorAll("[data-equip]").forEach(b=>b.onclick=()=>{
+    const to=b.dataset.equip; if(to===eq()) return;
+    if(S.current&&S.current.lifts.some(L=>L.sets.some(r=>r!==null))){ toast("Finish or discard today's workout first."); return }
+    S.liftsBy=S.liftsBy||{}; S.liftsBy[eq()]=S.lifts;
+    S.equip=to; S.lifts=S.liftsBy[to]||JSON.parse(JSON.stringify(to==="dumbbell"?DB_START:BB_START));
+    S.current=null; S.review=null; save(); renderSettings(); toast(to==="dumbbell"?"Switched to dumbbells":"Switched to barbell") });
   const eb=$("#eraseBackup"); if(eb) eb.onclick=()=>{ $("#backupText").value=JSON.stringify(S); copyBackup(false); setTimeout(()=>{ if(confirmMode==="reset") renderSettings() },300) };
 }
 function restore(txt){
@@ -948,7 +987,9 @@ view.addEventListener("click",e=>{
   if(e.target.id==="bkLater"){ S.backupSnooze=new Date(Date.now()+3*864e5).toISOString(); save(); renderToday(); return }
   if(e.target.id==="bkCopy"){ copyBackup(true); return }
   const adj=e.target.closest("[data-adj]");
-  if(adj){ const L=S.current.lifts[+adj.dataset.adj]; L.w=Math.max(S.settings.bar,L.w+parseFloat(adj.dataset.d)); save(); renderToday(); return }
+  if(adj){ const L=S.current.lifts[+adj.dataset.adj]; L.w=Math.max(floorW(),L.w+parseFloat(adj.dataset.d)); save(); renderToday(); return }
+  const fe=e.target.closest("[data-feel]");
+  if(fe){ const L=S.current.lifts[+fe.dataset.feel]; L.feel=L.feel===fe.dataset.f?null:fe.dataset.f; save(); renderToday(); return }
   if(e.target.id==="finish"){ const all=S.current.lifts.every(L=>L.sets.every(r=>r!==null)); if(all) finishWorkout(); else { confirmMode="finish"; renderToday() } }
   if(e.target.id==="forceFinish") finishWorkout();
   if(e.target.id==="cancelFinish"){ confirmMode=null; renderToday() }
