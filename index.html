@@ -178,6 +178,8 @@ textarea{width:100%;min-height:110px;font:13px ui-monospace,Menlo,monospace;bord
 .ver .linkbtn{margin:0;font-size:13px}
 .modal{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
 .mbox:focus{outline:none}
+.verbtn{display:block;width:100%;background:none;border:0;font:inherit;cursor:pointer;padding:14px 8px;min-height:48px}
+.verbtn .vlink{display:block;margin-top:4px;color:var(--accent,#e0283a);font-weight:700;text-decoration:underline}
 .mbox{background:var(--surface);color:var(--ink);border-radius:16px;padding:18px;max-width:480px;width:100%;max-height:100%;overflow:auto;border:1px solid var(--line)}
 .mbox h2{font:700 26px var(--display);text-transform:uppercase;margin:2px 0 10px}
 .wn ul{margin:6px 0 14px;padding-left:20px;line-height:1.45}
@@ -391,7 +393,7 @@ function renderToday(){
   }
   h+=`<div class="panel" style="margin-top:20px"><h2>Form videos</h2><p class="small" style="margin:-4px 0 6px">All five lifts. Day A is squat, bench, and row. Day B is squat, overhead press, and deadlift.</p>
     ${Object.keys(LIFTS).map(k=>`<a class="vrow" href="https://www.youtube.com/watch?v=${VID(k)}" target="_blank" rel="noopener"><span>${LN(k)}</span><span class="vid">Watch ▶</span></a>`).join("")}</div>`;
-  h+=`<p class="ver">Five Deep version ${APP_VERSION} · Updated ${fmtLong(APP_DATE)} · <button class="linkbtn" id="wnOpen">What's new</button></p>`;
+  h+=`<button type="button" class="ver verbtn" id="wnOpen">Five Deep version ${APP_VERSION} · Updated ${fmtLong(APP_DATE)}<span class="vlink">See what's new ›</span></button>`;
   view.innerHTML=h;
 }
 
